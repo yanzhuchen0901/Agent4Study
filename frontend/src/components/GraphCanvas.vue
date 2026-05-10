@@ -12,21 +12,19 @@ const props = defineProps({
 const emit = defineEmits(['node-selected'])
 const container = ref(null)
 let cy = null
+let layout = null
 
 const textbookShapes = ['ellipse', 'rectangle', 'diamond', 'round-triangle', 'star']
-
 const levelShape = { book: 'rectangle', chapter: 'round-triangle' }
 
 function degreeColor24(degree, minDegree, maxDegree) {
-  if (!Number.isFinite(degree)) return 'hsl(210, 85%, 70%)'
+  if (!Number.isFinite(degree)) return '#6fb1fc'
   const steps = 24
   const clampedMin = Number.isFinite(minDegree) ? minDegree : 0
   const clampedMax = Number.isFinite(maxDegree) ? maxDegree : clampedMin
   const denom = Math.max(1, clampedMax - clampedMin)
   const ratio = Math.min(1, Math.max(0, (degree - clampedMin) / denom))
-  const index = Math.round(ratio * (steps - 1))
-  const t = index / (steps - 1)
-
+  const t = ratio
   const hue = 210 * (1 - t)
   const lightness = 70 - 30 * t
   return `hsl(${hue.toFixed(0)}, 85%, ${lightness.toFixed(0)}%)`
@@ -37,63 +35,78 @@ const elements = computed(() => {
   const shapeByTextbook = Object.fromEntries(
     textbooks.map((id, index) => [id, textbookShapes[index % textbookShapes.length]]),
   )
-
   const degreeByNodeId = new Map()
   for (const edge of props.edges) {
-    const source = edge.source
-    const target = edge.target
-    if (source) degreeByNodeId.set(source, (degreeByNodeId.get(source) || 0) + 1)
-    if (target) degreeByNodeId.set(target, (degreeByNodeId.get(target) || 0) + 1)
+    const s = edge.source, t = edge.target
+    if (s) degreeByNodeId.set(s, (degreeByNodeId.get(s) || 0) + 1)
+    if (t) degreeByNodeId.set(t, (degreeByNodeId.get(t) || 0) + 1)
   }
-  const degrees = props.nodes.map((node) => degreeByNodeId.get(node.id) || 0)
+  const degrees = props.nodes.map((n) => degreeByNodeId.get(n.id) || 0)
   const minDegree = degrees.length ? Math.min(...degrees) : 0
-  const maxDegree = degrees.length ? Math.max(...degrees) : 0
+  const maxDegree = degrees.length ? Math.max(...degrees) : 1
 
   return [
     ...props.nodes.map((node) => {
       const degree = degreeByNodeId.get(node.id) || 0
-      const nodeLevel = node.level || 'knowledge'
-      const isBook = nodeLevel === 'book'
-      const isChapter = nodeLevel === 'chapter'
+      const nLevel = node.level || 'knowledge'
+      const isB = nLevel === 'book'
+      const isC = nLevel === 'chapter'
       return {
         data: {
           ...node,
           label: node.name,
           degree,
-          color: isBook ? '#2563eb' : isChapter ? '#d97706' : degreeColor24(degree, minDegree, maxDegree),
-          size: isBook ? 50 + Math.min((node.frequency || 1) * 2, 20) : isChapter ? 40 + Math.min((node.frequency || 1) * 2, 16) : 36 + Math.min((node.frequency || 1) * 5, 32),
-          shape: levelShape[nodeLevel] || shapeByTextbook[node.textbook_id || ''] || 'ellipse',
+          color: isB ? '#2563eb' : isC ? '#d97706' : degreeColor24(degree, minDegree, maxDegree),
+          size: isB ? 50 + Math.min((node.frequency || 1) * 2, 20)
+            : isC ? 40 + Math.min((node.frequency || 1) * 2, 16)
+            : 36 + Math.min((node.frequency || 1) * 5, 32),
+          shape: levelShape[nLevel] || shapeByTextbook[node.textbook_id || ''] || 'ellipse',
         },
       }
     }),
-    ...props.edges.map((edge) => ({
-      data: {
-        ...edge,
-      },
-    })),
+    ...props.edges.map((edge) => ({ data: { ...edge } })),
   ]
 })
 
-function runLayout() {
+function stopLayout() {
+  if (layout && layout.stop) { try { layout.stop() } catch {} }
+  layout = null
+}
+
+function runLayout(animate = false) {
   if (!cy) return
-  cy.layout({
+  stopLayout()
+  const options = {
     name: props.layoutName,
-    animate: true,
+    animate,
+    animationDuration: animate ? 400 : 0,
     fit: true,
     padding: 40,
-    nodeRepulsion: 8000,
-  }).run()
+    nodeRepulsion: () => 12000,
+    nodeGravityBuffer: 8,
+    numIter: 250,
+    idealEdgeLength: () => 120,
+    gravity: 0.25,
+    gravityRange: 3.8,
+    gravityCompound: 1.0,
+  }
+  if (props.layoutName === 'cose') {
+    options.nodeRepulsion = () => 15000
+    options.gravity = 0.3
+    options.idealEdgeLength = () => 150
+  }
+  layout = cy.layout(options)
+  layout.run()
 }
 
 function applyHighlight() {
   if (!cy) return
   cy.elements().removeClass('highlighted faded')
   if (!props.highlightedNodeIds.length) return
-  const highlighted = cy.collection(
-    props.highlightedNodeIds
-      .map((id) => cy.getElementById(id))
-      .filter((element) => element.length),
-  )
+  const ids = props.highlightedNodeIds.filter(Boolean)
+  if (!ids.length) return
+  const highlighted = cy.collection(ids.map((id) => cy.getElementById(id)).filter((e) => e.length))
+  if (!highlighted.length) return
   cy.elements().addClass('faded')
   highlighted.removeClass('faded').addClass('highlighted')
   highlighted.connectedEdges().removeClass('faded').addClass('highlighted')
@@ -106,87 +119,62 @@ async function renderGraph() {
   if (!cy) {
     cy = cytoscape({
       container: container.value,
-      elements: elements.value,
       style: [
-        {
-          selector: 'node',
-          style: {
-            'background-color': 'data(color)',
-            label: 'data(label)',
-            width: 'data(size)',
-            height: 'data(size)',
-            shape: 'data(shape)',
-            color: '#111827',
-            'font-size': 11,
-            'text-valign': 'bottom',
-            'text-halign': 'center',
-            'text-margin-y': 6,
-            'border-width': 2,
-            'border-color': '#e2e8f0',
-            'transition-property': 'opacity, background-color, border-width, border-color',
-            'transition-duration': '180ms',
-            'transition-timing-function': 'ease-in-out',
-          },
-        },
-        {
-          selector: 'edge',
-          style: {
-            width: 2,
-            'curve-style': 'bezier',
-            'target-arrow-shape': 'triangle',
-            'line-color': '#94a3b8',
-            'target-arrow-color': '#94a3b8',
-            'transition-property': 'opacity, width, line-color, target-arrow-color, arrow-scale',
-            'transition-duration': '180ms',
-            'transition-timing-function': 'ease-in-out',
-          },
-        },
+        { selector: 'node', style: {
+          'background-color': 'data(color)', label: 'data(label)',
+          width: 'data(size)', height: 'data(size)', shape: 'data(shape)',
+          color: '#334155', 'font-size': 11,
+          'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 6,
+          'border-width': 1.5, 'border-color': '#e2e8f0',
+          'transition-property': 'opacity, background-color',
+          'transition-duration': '200ms',
+        }},
+        { selector: 'edge', style: {
+          width: 2, 'curve-style': 'bezier', 'target-arrow-shape': 'triangle',
+          'line-color': '#94a3b8', 'target-arrow-color': '#94a3b8',
+          'transition-property': 'opacity, width',
+          'transition-duration': '200ms',
+        }},
         { selector: 'edge[relation_type = "prerequisite"]', style: { 'line-color': '#dc2626', 'target-arrow-color': '#dc2626' } },
         { selector: 'edge[relation_type = "parallel"]', style: { 'line-color': '#16a34a', 'target-arrow-color': '#16a34a' } },
         { selector: 'edge[relation_type = "contains"]', style: { 'line-color': '#d97706', 'target-arrow-color': '#d97706' } },
         { selector: 'edge[relation_type = "applies_to"]', style: { 'line-color': '#7c3aed', 'target-arrow-color': '#7c3aed' } },
         { selector: 'edge[relation_type = "overlap"]', style: { 'line-color': '#0891b2', 'target-arrow-color': '#0891b2', 'line-style': 'dashed' } },
-        { selector: 'node.highlighted', style: { 'border-width': 4, 'border-color': '#0f172a', 'z-index': 10 } },
-        { selector: 'edge.highlighted', style: { width: 6, 'arrow-scale': 1.35, 'z-index': 10 } },
-        { selector: '.faded', style: { opacity: 0.22 } },
+        { selector: 'node.highlighted', style: { 'shadow-blur': 12, 'shadow-color': '#2563eb', 'shadow-opacity': 0.5, 'shadow-offset-x': 0, 'shadow-offset-y': 0, 'z-index': 10 } },
+        { selector: 'edge.highlighted', style: { width: 4, 'arrow-scale': 1.2, 'z-index': 10 } },
+        { selector: '.faded', style: { opacity: 0.18 } },
       ],
     })
-    cy.on('tap', 'node', (event) => {
-      emit('node-selected', event.target.data())
+    cy.on('tap', 'node', (e) => emit('node-selected', e.target.data()))
+    cy.on('dblclick', 'node', (e) => {
+      const n = e.target
+      emit('node-selected', n.data())
     })
-    cy.on('dblclick', 'node', (event) => {
-      const node = event.target
-      const neighborIds = new Set()
-      neighborIds.add(node.id())
-      node.neighborhood().nodes().forEach((n) => neighborIds.add(n.id()))
-      emit('node-selected', node.data())
-      const ids = [...neighborIds]
-      const collection = cy.collection(
-        ids.map((id) => cy.getElementById(id)).filter((el) => el.length),
-      )
-      if (collection.length) {
-        cy.elements().addClass('faded')
-        collection.removeClass('faded').addClass('highlighted')
-        collection.connectedEdges().removeClass('faded').addClass('highlighted')
-      }
+    cy.on('dragfree', 'node', () => {
+      stopLayout()
     })
+    cy.add(elements.value)
+    runLayout(true)
+    applyHighlight()
   } else {
+    // Re-render: batch-replace elements atomically, no animated layout
+    stopLayout()
+    cy.startBatch()
     cy.elements().remove()
     cy.add(elements.value)
+    cy.endBatch()
+    runLayout(false)
+    applyHighlight()
   }
-  runLayout()
-  applyHighlight()
 }
 
 watch(() => [props.nodes, props.edges], renderGraph, { deep: true, immediate: true })
-watch(() => props.layoutName, runLayout)
+watch(() => props.layoutName, () => { if (cy) runLayout(true) })
 watch(() => props.highlightedNodeIds, applyHighlight, { deep: true })
 
 onBeforeUnmount(() => {
-  if (cy) {
-    cy.destroy()
-    cy = null
-  }
+  stopLayout()
+  if (cy) { cy.destroy(); cy = null }
 })
 </script>
 
