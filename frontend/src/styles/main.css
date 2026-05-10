@@ -219,6 +219,93 @@ textarea {
   background: #ffffff;
 }
 
+.graph-view {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  min-height: calc(100vh - 176px);
+}
+
+.graph-main,
+.graph-side {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.graph-filter {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(120px, 160px)) auto;
+  gap: 10px;
+}
+
+.graph-filter input,
+.graph-filter select,
+.side-panel textarea {
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.side-panel textarea {
+  width: 100%;
+  padding: 10px;
+  resize: vertical;
+}
+
+.side-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.side-panel h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+}
+
+.side-panel p {
+  margin: 0;
+}
+
+.metric-grid.compact {
+  grid-template-columns: 1fr 1fr;
+}
+
+.warning-line {
+  color: #b45309;
+  font-size: 12px;
+}
+
+.legend-line {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.legend-line.prerequisite {
+  color: #dc2626;
+}
+
+.legend-line.parallel {
+  color: #16a34a;
+}
+
+.legend-line.contains {
+  color: #d97706;
+}
+
+.legend-line.applies {
+  color: #7c3aed;
+}
+
 .graph-empty {
   position: absolute;
   inset: 0;
@@ -304,5 +391,10 @@ th {
 
   .tab-link {
     flex: 1 1 30%;
+  }
+
+  .graph-view,
+  .graph-filter {
+    grid-template-columns: 1fr;
   }
 }

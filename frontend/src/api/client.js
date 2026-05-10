@@ -65,3 +65,8 @@ export async function getMergeStatus() {
   const response = await apiClient.get('/api/graph/merge/status')
   return response.data
 }
+
+export async function queryGraph(question, depth = 2) {
+  const response = await apiClient.post('/api/graph/query', { question, depth })
+  return response.data
+}
