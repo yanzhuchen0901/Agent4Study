@@ -9,9 +9,5 @@
   "sdk_type": "docker",
   "hardware": "platform/2v-cpu-16g-mem",
   "port": 7860,
-  "resource_configuration": {
-    "cpu": 2,
-    "memory": 16,
-    "gpu": 0
-  }
+  "resource_configuration": "platform/2v-cpu-16g-mem"
 }
