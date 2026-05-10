@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+python-multipart
+PyMuPDF
+python-docx
+pandas
+openpyxl
+networkx
+sentence-transformers
+faiss-cpu
+rank-bm25
+openai
+httpx
