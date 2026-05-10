@@ -106,42 +106,44 @@ async function refreshGraph() {
 }
 
 function handleLevelChange(newLevel) {
+  selectedNode.value = null
+  highlightedNodeIds.value = []
   currentLevel.value = newLevel
   if (newLevel === 'book') {
     drillTextbookId.value = ''
     drillChapterId.value = ''
   }
-  highlightedNodeIds.value = []
-  selectedNode.value = null
   loadLevelData()
 }
 
 function handleBreadcrumbNavigate(item) {
   if (!item.level) return
+  selectedNode.value = null
+  highlightedNodeIds.value = []
   currentLevel.value = item.level
   drillTextbookId.value = item.textbookId || ''
   drillChapterId.value = item.chapterId || ''
-  highlightedNodeIds.value = []
-  selectedNode.value = null
   loadLevelData()
 }
 
 function handleNodeSelected(node) {
   selectedNode.value = node
+  highlightedNodeIds.value = [node.id]
+  chapterStart.value = null
+  chapterLinkStatus.value = ''
+
   if (currentLevel.value === 'book') {
+    status.value = `钻取到章节: ${node.name}`
     drillTextbookId.value = node.textbook_id
+    drillChapterId.value = ''
     currentLevel.value = 'chapter'
-    loadLevelData()
   } else if (currentLevel.value === 'chapter') {
+    status.value = `钻取到知识点: ${node.name}`
     drillTextbookId.value = node.textbook_id
     drillChapterId.value = node.chapter_id
     currentLevel.value = 'knowledge'
-    loadLevelData()
-  } else {
-    highlightedNodeIds.value = [node.id]
-    chapterStart.value = null
-    chapterLinkStatus.value = ''
   }
+  loadLevelData()
 }
 
 async function handleBuildHierarchy() {
