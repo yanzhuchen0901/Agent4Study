@@ -1,5 +1,7 @@
 """FastAPI entrypoint for Agent4Study."""
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,11 +22,15 @@ app = FastAPI(
     description="AI-powered textbook knowledge integration system.",
 )
 
+_cors_default = (
+    "http://localhost:5173,http://localhost:5174,"
+    "http://127.0.0.1:5173,http://127.0.0.1:5174"
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", _cors_default).split(",")
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -47,12 +53,12 @@ def health_check() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": "task1-scaffold",
+        "stage": "task8-complete",
         "modules": {
-            "ingestion": "placeholder",
-            "knowledge_graph": "placeholder",
-            "rag": "placeholder",
-            "agent": "placeholder",
-            "report": "placeholder",
+            "ingestion": "ready",
+            "knowledge_graph": "ready",
+            "rag": "ready",
+            "agent": "ready",
+            "report": "ready",
         },
     }
