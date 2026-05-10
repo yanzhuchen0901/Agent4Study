@@ -34,6 +34,24 @@ graph TD
 - RAG Generator 使用 LLM 生成最终回答；失败时返回基于检索片段的可解释错误。
 - Merge Agent 使用 LLM 判断 `merge/keep/remove`；失败时回退规则相似度建议。
 
+## 设计决策与权衡
+
+### 为什么用规则 Decomposer，而不是直接用 LLM
+
+- **速度与成本**：拆分是高频、低复杂度步骤，用规则实现能稳定在毫秒级完成，降低对外部 LLM 的调用次数。
+- **可控性**：规则拆分更容易约束子问题数量（1-5 个）与粒度，避免 LLM 把问题拆得过细或出现跑偏子任务。
+- **可恢复性**：当 LLM 不可用或超时时，规则拆分仍可工作，保证工作流不中断。
+
+代价：规则对“隐含多意图”的问题识别能力弱于 LLM；为此 Planner/Searcher/Synthesizer 仍可在后续阶段补偿推理。
+
+### 为什么自研 Orchestrator，而不是使用 LangGraph 等框架
+
+- **体积小、依赖少**：本项目希望保持可部署性与可读性，`AgentOrchestrator` 仅依赖现有模块，无需引入大型编排框架。
+- **更贴近业务数据流**：步骤结构（RAG/KG 两类）与 SSE 事件（started/step/completed/error）紧密配合，定制实现更直接。
+- **可解释与可调试**：每个 step 的 `status/output` 都能被前端完整展示，利于演示与定位问题。
+
+代价：缺少图执行引擎的高级特性（如 checkpoint、并行分支、可视化编排编辑器）；当前通过“步骤可重放 + 错误不致命”来满足演示需求。
+
 ## 实时输出
 
 `GET /api/agent/query/stream` 使用 SSE 输出执行过程：
