@@ -2,14 +2,25 @@
 import { onMounted, ref } from 'vue'
 
 import UploadZone from '../components/UploadZone.vue'
-import { deleteTextbook, listTextbooks, uploadTextbook } from '../api/client'
+import { deleteTextbook, getSettings, listTextbooks, uploadTextbook } from '../api/client'
 
 const textbooks = ref([])
+const runtimeSettings = ref(null)
 const status = ref('')
 const isBusy = ref(false)
+const preferences = ref({
+  apiBase: localStorage.getItem('a4s.apiBase') || '/',
+  defaultTopK: Number(localStorage.getItem('a4s.defaultTopK') || 5),
+  graphLayout: localStorage.getItem('a4s.graphLayout') || 'cose',
+  enableSse: localStorage.getItem('a4s.enableSse') !== 'false',
+})
 
 async function refreshList() {
   textbooks.value = await listTextbooks()
+}
+
+async function refreshSettings() {
+  runtimeSettings.value = await getSettings()
 }
 
 async function handleFiles(files) {
@@ -41,21 +52,67 @@ async function removeTextbook(textbookId) {
   }
 }
 
-onMounted(refreshList)
+function savePreferences() {
+  localStorage.setItem('a4s.apiBase', preferences.value.apiBase)
+  localStorage.setItem('a4s.defaultTopK', String(preferences.value.defaultTopK))
+  localStorage.setItem('a4s.graphLayout', preferences.value.graphLayout)
+  localStorage.setItem('a4s.enableSse', String(preferences.value.enableSse))
+  status.value = '前端偏好已保存'
+}
+
+onMounted(async () => {
+  await Promise.all([refreshList(), refreshSettings()])
+})
 </script>
 
 <template>
   <section class="tool-view">
     <div class="section-header">
-      <p class="eyebrow">Ingestion</p>
-      <h2>教材解析</h2>
+      <p class="eyebrow">Settings</p>
+      <h2>上传与设置</h2>
     </div>
 
-    <UploadZone @files-selected="handleFiles" />
+    <div class="settings-grid">
+      <section class="side-panel">
+        <h3>教材上传</h3>
+        <UploadZone :busy="isBusy" @files-selected="handleFiles" />
+        <div class="toolbar-line">
+          <button class="secondary-button" :disabled="isBusy" @click="refreshList">刷新列表</button>
+          <span>{{ status }}</span>
+        </div>
+      </section>
 
-    <div class="toolbar-line">
-      <button class="secondary-button" :disabled="isBusy" @click="refreshList">刷新列表</button>
-      <span>{{ status }}</span>
+      <section class="side-panel">
+        <h3>运行配置</h3>
+        <div v-if="runtimeSettings" class="settings-list">
+          <span>LLM: {{ runtimeSettings.llm_provider }} / {{ runtimeSettings.llm_model || '-' }}</span>
+          <span>Base URL: {{ runtimeSettings.llm_base_url }}</span>
+          <span>API Key: {{ runtimeSettings.llm_api_key_configured ? '已配置' : '未配置' }}</span>
+          <span>Embedding: {{ runtimeSettings.embedding_model }}</span>
+          <span>Data: {{ runtimeSettings.data_dir }}</span>
+        </div>
+      </section>
+
+      <section class="side-panel">
+        <h3>前端偏好</h3>
+        <div class="settings-form">
+          <label>API 地址 <input v-model="preferences.apiBase" /></label>
+          <label>默认 top_k <input v-model.number="preferences.defaultTopK" type="number" min="1" max="10" /></label>
+          <label>
+            图谱布局
+            <select v-model="preferences.graphLayout">
+              <option value="cose">cose</option>
+              <option value="breadthfirst">breadthfirst</option>
+              <option value="circle">circle</option>
+            </select>
+          </label>
+          <label class="inline-toggle">
+            <input v-model="preferences.enableSse" type="checkbox" />
+            <span>启用 Agent SSE</span>
+          </label>
+          <button class="secondary-button" @click="savePreferences">保存偏好</button>
+        </div>
+      </section>
     </div>
 
     <div class="table-wrap">

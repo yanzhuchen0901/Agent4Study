@@ -7,6 +7,8 @@ from src.api.agent_routes import router as agent_router
 from src.api.graph_routes import router as graph_router
 from src.api.ingestion_routes import router as ingestion_router
 from src.api.rag_routes import router as rag_router
+from src.api.report_routes import router as report_router
+from src.api.settings_routes import router as settings_router
 from src.config import get_settings
 
 
@@ -33,6 +35,8 @@ app.include_router(ingestion_router)
 app.include_router(graph_router)
 app.include_router(rag_router)
 app.include_router(agent_router)
+app.include_router(settings_router)
+app.include_router(report_router)
 
 
 @app.get("/health", tags=["system"])

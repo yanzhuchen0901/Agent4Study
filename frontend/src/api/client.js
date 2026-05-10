@@ -100,3 +100,13 @@ export async function queryAgent(question) {
   const response = await apiClient.post('/api/agent/query', { question })
   return response.data
 }
+
+export async function getSettings() {
+  const response = await apiClient.get('/api/settings')
+  return response.data
+}
+
+export async function getReportMarkdown() {
+  const response = await apiClient.get('/api/report/markdown')
+  return response.data
+}
