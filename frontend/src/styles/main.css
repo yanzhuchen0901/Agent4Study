@@ -210,6 +210,24 @@ textarea {
   font-size: 13px;
 }
 
+.graph-canvas {
+  position: relative;
+  min-height: 560px;
+  overflow: hidden;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.graph-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  pointer-events: none;
+}
+
 .secondary-button,
 .danger-button {
   min-height: 34px;
