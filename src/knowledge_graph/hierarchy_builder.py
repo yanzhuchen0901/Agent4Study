@@ -147,21 +147,29 @@ class HierarchyBuilder:
     ) -> list[KnowledgeEdge]:
         edges: list[KnowledgeEdge] = []
         tb_ids = [tb.textbook_id for tb in textbooks]
+        tb_token_map: dict[str, set[str]] = {}
+        for tb in textbooks:
+            tokens: set[str] = set()
+            for n in knowledge_by_tb.get(tb.textbook_id, []):
+                tokens.update(self._tokens(n.name))
+                tokens.update(self._tokens(n.definition))
+            tokens.update(self._tokens(tb.title))
+            tb_token_map[tb.textbook_id] = tokens
+
         for i in range(len(tb_ids)):
             for j in range(i + 1, len(tb_ids)):
                 a, b = tb_ids[i], tb_ids[j]
-                nodes_a = {n.name for n in knowledge_by_tb.get(a, [])}
-                nodes_b = {n.name for n in knowledge_by_tb.get(b, [])}
-                overlap, jaccard = self._jaccard(nodes_a, nodes_b)
-                if jaccard >= 0.15:
+                overlap, jaccard = self._jaccard(tb_token_map.get(a, set()), tb_token_map.get(b, set()))
+                if jaccard >= 0.06:
+                    relation = "prerequisite" if jaccard >= 0.25 else "overlap"
                     edges.append(
                         KnowledgeEdge(
                             id="",
                             source=f"book_{a}",
                             target=f"book_{b}",
-                            relation_type="overlap",
+                            relation_type=relation,
                             description=(
-                                f"共享 {overlap} 个概念 (Jaccard={jaccard:.2f})"
+                                f"共享 {overlap} 个关键词 (Jaccard={jaccard:.2f})"
                             ),
                             level="book",
                         )
@@ -174,31 +182,53 @@ class HierarchyBuilder:
         knowledge_by_ch: dict[Tuple[str, str], list[KnowledgeNode]],
     ) -> list[KnowledgeEdge]:
         edges: list[KnowledgeEdge] = []
+        tb_map = {tb.textbook_id: tb for tb in textbooks}
+        ch_token_map: dict[Tuple[str, str], set[str]] = {}
+
+        for key, nodes in knowledge_by_ch.items():
+            tokens: set[str] = set()
+            for n in nodes:
+                tokens.update(self._tokens(n.name))
+                tokens.update(self._tokens(n.definition))
+            tb = tb_map.get(key[0])
+            if tb:
+                ch = next((c for c in tb.chapters if c.chapter_id == key[1]), None)
+                if ch:
+                    tokens.update(self._tokens(ch.title))
+            ch_token_map[key] = tokens
+
         ch_keys = list(knowledge_by_ch.keys())
         for i in range(len(ch_keys)):
             for j in range(i + 1, len(ch_keys)):
                 key_a, key_b = ch_keys[i], ch_keys[j]
                 if key_a[0] == key_b[0]:
                     continue
-                nodes_a = {n.name for n in knowledge_by_ch[key_a]}
-                nodes_b = {n.name for n in knowledge_by_ch[key_b]}
-                overlap, jaccard = self._jaccard(nodes_a, nodes_b)
-                if jaccard >= 0.15:
+                overlap, jaccard = self._jaccard(ch_token_map.get(key_a, set()), ch_token_map.get(key_b, set()))
+                if jaccard >= 0.06:
                     ch_a_id = f"chapter_{key_a[0]}_{key_a[1]}"
                     ch_b_id = f"chapter_{key_b[0]}_{key_b[1]}"
+                    relation = "prerequisite" if jaccard >= 0.25 else "overlap"
                     edges.append(
                         KnowledgeEdge(
                             id="",
                             source=ch_a_id,
                             target=ch_b_id,
-                            relation_type="overlap",
+                            relation_type=relation,
                             description=(
-                                f"共享 {overlap} 个知识点 (Jaccard={jaccard:.2f})"
+                                f"共享 {overlap} 个关键词 (Jaccard={jaccard:.2f})"
                             ),
                             level="chapter",
                         )
                     )
         return edges
+
+    @staticmethod
+    def _tokens(text: str) -> list[str]:
+        import re
+        text = text.lower()
+        eng_tokens = re.findall(r"[a-z]+", text)
+        chn_chars = re.findall(r"[\u4e00-\u9fff]", text)
+        return eng_tokens + chn_chars
 
     @staticmethod
     def _jaccard(a: set[str], b: set[str]) -> Tuple[int, float]:
