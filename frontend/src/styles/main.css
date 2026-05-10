@@ -117,11 +117,101 @@ textarea {
 }
 
 .upload-zone {
+  display: flex;
+  min-height: 150px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
   border: 1px dashed #94a3b8;
   border-radius: 8px;
   padding: 20px;
   color: #475569;
   background: #f8fafc;
+}
+
+.upload-zone strong {
+  color: #111827;
+  font-size: 18px;
+}
+
+.file-input {
+  display: none;
+}
+
+.tool-view {
+  display: grid;
+  gap: 18px;
+  min-height: calc(100vh - 176px);
+  align-content: start;
+}
+
+.section-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.toolbar-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #475569;
+}
+
+.secondary-button,
+.danger-button {
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 600;
+}
+
+.danger-button {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.secondary-button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  color: #475569;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.empty-cell {
+  color: #64748b;
+  text-align: center;
 }
 
 .statusbar {
