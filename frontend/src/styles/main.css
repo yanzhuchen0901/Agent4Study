@@ -306,6 +306,39 @@ textarea {
   color: #7c3aed;
 }
 
+.rag-view,
+.rag-result {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.citation-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.citation-card span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+details {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .graph-empty {
   position: absolute;
   inset: 0;

@@ -1,9 +1,112 @@
+<script setup>
+import { onMounted, ref } from 'vue'
+
+import { getRAGStatus, indexRAG, queryRAG } from '../api/client'
+
+const textbookId = ref('')
+const question = ref('')
+const topK = ref(5)
+const status = ref(null)
+const result = ref(null)
+const message = ref('')
+const isBusy = ref(false)
+
+async function refreshStatus() {
+  status.value = await getRAGStatus()
+}
+
+async function handleIndex() {
+  if (!textbookId.value.trim()) {
+    message.value = '请输入 textbook_id'
+    return
+  }
+  isBusy.value = true
+  message.value = '正在建立 RAG 索引...'
+  try {
+    const indexed = await indexRAG(textbookId.value.trim())
+    await refreshStatus()
+    message.value = `索引完成: ${indexed.chunks} chunks / ${indexed.dimension} 维`
+  } catch (error) {
+    message.value = error.response?.data?.detail || '索引失败'
+  } finally {
+    isBusy.value = false
+  }
+}
+
+async function handleQuery() {
+  if (!question.value.trim()) {
+    message.value = '请输入问题'
+    return
+  }
+  isBusy.value = true
+  message.value = '正在检索并生成回答...'
+  try {
+    result.value = await queryRAG(question.value.trim(), topK.value)
+    message.value = '回答完成'
+  } catch (error) {
+    message.value = error.response?.data?.detail || '问答失败'
+  } finally {
+    isBusy.value = false
+  }
+}
+
+onMounted(refreshStatus)
+</script>
+
 <template>
-  <section class="view-panel">
-    <div>
+  <section class="rag-view">
+    <div class="section-header">
       <p class="eyebrow">RAG</p>
       <h2>RAG 问答</h2>
-      <p>Task 1 占位页，后续接入索引状态、问答输入框、引用来源和原文片段。</p>
+    </div>
+
+    <div class="metric-grid compact">
+      <div class="metric-card">
+        <strong>{{ status?.chunks || 0 }}</strong>
+        <span>知识块</span>
+      </div>
+      <div class="metric-card">
+        <strong>{{ status?.dimension || 0 }}</strong>
+        <span>向量维度</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <input v-model="textbookId" placeholder="输入已解析教材 textbook_id" />
+      <button class="secondary-button" :disabled="isBusy" @click="handleIndex">建立索引</button>
+      <button class="secondary-button" :disabled="isBusy" @click="refreshStatus">刷新状态</button>
+    </div>
+
+    <div class="side-panel">
+      <textarea v-model="question" rows="4" placeholder="输入教材问题，例如：什么是排序算法？"></textarea>
+      <div class="form-row">
+        <input v-model.number="topK" type="number" min="1" max="10" />
+        <button class="secondary-button" :disabled="isBusy" @click="handleQuery">发送</button>
+      </div>
+      <p class="muted-line">{{ message }}</p>
+    </div>
+
+    <div v-if="result" class="rag-result">
+      <section class="side-panel">
+        <h3>回答</h3>
+        <p>{{ result.answer }}</p>
+      </section>
+
+      <section class="side-panel">
+        <h3>引用来源</h3>
+        <div v-for="citation in result.citations" :key="citation.chunk_id" class="citation-card">
+          <strong>{{ citation.textbook }}</strong>
+          <span>{{ citation.chapter }} · p.{{ citation.page }} · {{ Math.round(citation.relevance_score * 100) }}%</span>
+        </div>
+      </section>
+
+      <section class="side-panel">
+        <h3>原文片段</h3>
+        <details v-for="(chunk, index) in result.source_chunks" :key="index">
+          <summary>片段 {{ index + 1 }}</summary>
+          <p>{{ chunk }}</p>
+        </details>
+      </section>
     </div>
   </section>
 </template>

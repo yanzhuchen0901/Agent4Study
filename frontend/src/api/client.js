@@ -70,3 +70,18 @@ export async function queryGraph(question, depth = 2) {
   const response = await apiClient.post('/api/graph/query', { question, depth })
   return response.data
 }
+
+export async function indexRAG(textbookId) {
+  const response = await apiClient.post('/api/rag/index', { textbook_id: textbookId })
+  return response.data
+}
+
+export async function queryRAG(query, topK = 5) {
+  const response = await apiClient.post('/api/rag/query', { query, top_k: topK })
+  return response.data
+}
+
+export async function getRAGStatus() {
+  const response = await apiClient.get('/api/rag/status')
+  return response.data
+}
