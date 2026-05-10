@@ -93,9 +93,6 @@ function applyHighlight() {
   highlighted.removeClass('faded').addClass('highlighted')
   highlighted.connectedEdges().removeClass('faded').addClass('highlighted')
   highlighted.connectedEdges().connectedNodes().removeClass('faded')
-  if (highlighted.length) {
-    cy.animate({ fit: { eles: highlighted, padding: 90 } }, { duration: 250 })
-  }
 }
 
 async function renderGraph() {
@@ -159,7 +156,6 @@ async function renderGraph() {
         cy.elements().addClass('faded')
         collection.removeClass('faded').addClass('highlighted')
         collection.connectedEdges().removeClass('faded').addClass('highlighted')
-        cy.animate({ fit: { eles: collection, padding: 90 } }, { duration: 300 })
       }
     })
   } else {
