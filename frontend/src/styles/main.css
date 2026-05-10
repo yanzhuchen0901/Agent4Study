@@ -484,6 +484,48 @@ textarea {
   max-width: min(760px, 100%);
 }
 
+.merge-review-list {
+  display: grid;
+  gap: 12px;
+}
+
+.merge-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.merge-card p {
+  margin: 0;
+}
+
+.merge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.merge-actions select {
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #ffffff;
+}
+
+.inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .citation-card {
   display: grid;
   gap: 4px;

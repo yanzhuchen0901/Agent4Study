@@ -22,6 +22,16 @@ class GraphQueryRequest(BaseModel):
     depth: int = 2
 
 
+class MergeReview(BaseModel):
+    decision_id: str
+    action: str
+    approved: bool = True
+
+
+class MergeConfirmRequest(BaseModel):
+    decisions: list[MergeReview]
+
+
 @router.post("/build", response_model=GraphBuildResult)
 def build_graph(request: BuildGraphRequest) -> GraphBuildResult:
     store = GraphStore()
@@ -78,6 +88,16 @@ def query_graph(request: GraphQueryRequest) -> GraphQueryResult:
 @router.post("/merge", response_model=MergeStatus)
 def merge_graph() -> MergeStatus:
     return KnowledgeMerger().merge_cross_books()
+
+
+@router.post("/merge/preview", response_model=MergeStatus)
+def preview_merge() -> MergeStatus:
+    return KnowledgeMerger().preview()
+
+
+@router.post("/merge/confirm", response_model=MergeStatus)
+def confirm_merge(request: MergeConfirmRequest) -> MergeStatus:
+    return KnowledgeMerger().confirm([review.model_dump() for review in request.decisions])
 
 
 @router.get("/merge/status", response_model=MergeStatus)

@@ -61,6 +61,16 @@ export async function mergeGraph() {
   return response.data
 }
 
+export async function previewMergeGraph() {
+  const response = await apiClient.post('/api/graph/merge/preview')
+  return response.data
+}
+
+export async function confirmMergeGraph(decisions) {
+  const response = await apiClient.post('/api/graph/merge/confirm', { decisions })
+  return response.data
+}
+
 export async function getMergeStatus() {
   const response = await apiClient.get('/api/graph/merge/status')
   return response.data

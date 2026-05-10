@@ -20,6 +20,7 @@ class KnowledgeMerger:
         self.store = store or GraphStore()
         self.llm_client = llm_client or GraphLLMClient()
         self.decisions_path = self.settings.graph_dir / "merge_decisions.json"
+        self.pending_path = self.settings.graph_dir / "pending_merge_decisions.json"
 
     def merge_cross_books(self) -> MergeStatus:
         nodes = self.store.load_nodes()
@@ -38,10 +39,52 @@ class KnowledgeMerger:
         self.decisions_path.write_text(json.dumps([d.model_dump() for d in decisions], ensure_ascii=False, indent=2), encoding="utf-8")
         return self.status(original_count=original_count)
 
-    def status(self, original_count: int | None = None) -> MergeStatus:
+    def preview(self) -> MergeStatus:
+        nodes = self.store.load_nodes()
+        groups = self._candidate_groups(nodes)
+        decisions = [self._decide(group, index + 1) for index, group in enumerate(groups)]
+        self.pending_path.write_text(
+            json.dumps([d.model_dump() for d in decisions], ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return self.status(decisions=decisions)
+
+    def confirm(self, reviews: list[dict]) -> MergeStatus:
         nodes = self.store.load_nodes()
         edges = self.store.load_edges()
-        decisions = self._load_decisions()
+        original_count = len(nodes)
+        pending = {decision.decision_id: decision for decision in self._load_pending_decisions()}
+        node_by_id = {node.id: node for node in nodes}
+        reviewed: list[MergeDecision] = []
+
+        for review in reviews:
+            decision = pending.get(str(review.get("decision_id", "")))
+            if not decision:
+                continue
+            approved = bool(review.get("approved", False))
+            action = str(review.get("action", decision.action))
+            if action not in {"merge", "keep", "remove"}:
+                action = decision.action
+            decision = decision.model_copy(update={"action": action})
+            reviewed.append(decision)
+            if approved and decision.action == "merge":
+                group = [node_by_id[node_id] for node_id in decision.affected_nodes if node_id in node_by_id]
+                if len(group) > 1:
+                    nodes, edges = self._apply_merge(nodes, edges, group, decision)
+                    node_by_id = {node.id: node for node in nodes}
+
+        self.store.save(nodes, edges)
+        self.decisions_path.write_text(
+            json.dumps([d.model_dump() for d in reviewed], ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        self.pending_path.unlink(missing_ok=True)
+        return self.status(original_count=original_count, decisions=reviewed)
+
+    def status(self, original_count: int | None = None, decisions: list[MergeDecision] | None = None) -> MergeStatus:
+        nodes = self.store.load_nodes()
+        edges = self.store.load_edges()
+        decisions = decisions if decisions is not None else self._load_decisions()
         merge_count = sum(1 for decision in decisions if decision.action == "merge")
         baseline = original_count or (len(nodes) + merge_count)
         rate = 0.0 if baseline == 0 else round((baseline - len(nodes)) / baseline, 4)
@@ -57,6 +100,11 @@ class KnowledgeMerger:
         if not self.decisions_path.exists():
             return []
         return [MergeDecision.model_validate(item) for item in json.loads(self.decisions_path.read_text(encoding="utf-8"))]
+
+    def _load_pending_decisions(self) -> list[MergeDecision]:
+        if not self.pending_path.exists():
+            return []
+        return [MergeDecision.model_validate(item) for item in json.loads(self.pending_path.read_text(encoding="utf-8"))]
 
     def _candidate_groups(self, nodes: list[KnowledgeNode]) -> list[list[KnowledgeNode]]:
         used: set[str] = set()
