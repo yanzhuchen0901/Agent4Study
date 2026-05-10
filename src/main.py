@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.graph_routes import router as graph_router
 from src.api.ingestion_routes import router as ingestion_router
+from src.api.rag_routes import router as rag_router
 from src.config import get_settings
 
 
@@ -29,6 +30,7 @@ app.add_middleware(
 
 app.include_router(ingestion_router)
 app.include_router(graph_router)
+app.include_router(rag_router)
 
 
 @app.get("/health", tags=["system"])
