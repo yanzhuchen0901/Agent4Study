@@ -65,3 +65,11 @@ class GraphQueryResult(BaseModel):
     query_type: str
     matched_node_ids: list[str]
     error: str | None = None
+
+
+class HierarchyBuildResult(BaseModel):
+    book_count: int
+    chapter_count: int
+    book_book_edges: int
+    chapter_chapter_edges: int
+    hierarchy_edges: int
