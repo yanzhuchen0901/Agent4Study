@@ -70,17 +70,21 @@ export async function buildGraph(textbookId) {
     return response.data
 }
 
-export async function listGraphNodes(textbookId = '') {
-    const response = await apiClient.get('/api/graph/nodes', {
-        params: textbookId ? { textbook_id: textbookId } : {},
-    })
+export async function listGraphNodes(textbookId = '', chapterId = '', level = '') {
+    const params = {}
+    if (textbookId) params.textbook_id = textbookId
+    if (chapterId) params.chapter_id = chapterId
+    if (level) params.level = level
+    const response = await apiClient.get('/api/graph/nodes', { params })
     return response.data
 }
 
-export async function listGraphEdges(textbookId = '') {
-    const response = await apiClient.get('/api/graph/edges', {
-        params: textbookId ? { textbook_id: textbookId } : {},
-    })
+export async function listGraphEdges(textbookId = '', relationType = '', level = '') {
+    const params = {}
+    if (textbookId) params.textbook_id = textbookId
+    if (relationType) params.relation_type = relationType
+    if (level) params.level = level
+    const response = await apiClient.get('/api/graph/edges', { params })
     return response.data
 }
 
@@ -141,5 +145,15 @@ export async function getSettings() {
 
 export async function getReportMarkdown() {
     const response = await apiClient.get('/api/report/markdown')
+    return response.data
+}
+
+export async function buildHierarchy() {
+    const response = await apiClient.post('/api/graph/hierarchy/build')
+    return response.data
+}
+
+export async function getHierarchySummary() {
+    const response = await apiClient.get('/api/graph/hierarchy/summary')
     return response.data
 }

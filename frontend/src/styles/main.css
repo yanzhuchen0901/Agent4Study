@@ -45,6 +45,19 @@ textarea {
   background: #ffffff;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .topbar h1 {
   margin: 0;
   color: #111827;
@@ -638,6 +651,59 @@ summary {
   place-items: center;
   color: #64748b;
   pointer-events: none;
+}
+
+.level-switcher {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.level-btn {
+  min-height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: #475569;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.level-btn.active {
+  border-color: #2563eb;
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.graph-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.crumb-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.crumb-link:hover {
+  text-decoration: underline;
+}
+
+.crumb-current {
+  color: #111827;
+  font-weight: 700;
+}
+
+.crumb-sep {
+  color: #94a3b8;
+  margin: 0 2px;
 }
 
 .secondary-button,

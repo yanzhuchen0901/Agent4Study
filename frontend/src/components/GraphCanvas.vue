@@ -15,6 +15,8 @@ let cy = null
 
 const textbookShapes = ['ellipse', 'rectangle', 'diamond', 'round-triangle', 'star']
 
+const levelShape = { book: 'rectangle', chapter: 'round-triangle' }
+
 function degreeColor24(degree, minDegree, maxDegree) {
   if (!Number.isFinite(degree)) return 'hsl(210, 85%, 70%)'
   const steps = 24
@@ -50,14 +52,17 @@ const elements = computed(() => {
   return [
     ...props.nodes.map((node) => {
       const degree = degreeByNodeId.get(node.id) || 0
+      const nodeLevel = node.level || 'knowledge'
+      const isBook = nodeLevel === 'book'
+      const isChapter = nodeLevel === 'chapter'
       return {
         data: {
           ...node,
           label: node.name,
           degree,
-          color: degreeColor24(degree, minDegree, maxDegree),
-          size: 36 + Math.min((node.frequency || 1) * 5, 32),
-          shape: shapeByTextbook[node.textbook_id || ''] || 'ellipse',
+          color: isBook ? '#2563eb' : isChapter ? '#d97706' : degreeColor24(degree, minDegree, maxDegree),
+          size: isBook ? 50 + Math.min((node.frequency || 1) * 2, 20) : isChapter ? 40 + Math.min((node.frequency || 1) * 2, 16) : 36 + Math.min((node.frequency || 1) * 5, 32),
+          shape: levelShape[nodeLevel] || shapeByTextbook[node.textbook_id || ''] || 'ellipse',
         },
       }
     }),
@@ -140,6 +145,7 @@ async function renderGraph() {
         { selector: 'edge[relation_type = "parallel"]', style: { 'line-color': '#16a34a', 'target-arrow-color': '#16a34a' } },
         { selector: 'edge[relation_type = "contains"]', style: { 'line-color': '#d97706', 'target-arrow-color': '#d97706' } },
         { selector: 'edge[relation_type = "applies_to"]', style: { 'line-color': '#7c3aed', 'target-arrow-color': '#7c3aed' } },
+        { selector: 'edge[relation_type = "overlap"]', style: { 'line-color': '#0891b2', 'target-arrow-color': '#0891b2', 'line-style': 'dashed' } },
         { selector: 'node.highlighted', style: { 'border-width': 4, 'border-color': '#0f172a', 'z-index': 10 } },
         { selector: 'edge.highlighted', style: { width: 6, 'arrow-scale': 1.35, 'z-index': 10 } },
         { selector: '.faded', style: { opacity: 0.22 } },
