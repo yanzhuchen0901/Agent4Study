@@ -156,9 +156,58 @@ textarea {
 
 .toolbar-line {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   color: #475569;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.form-row input {
+  min-height: 40px;
+  min-width: min(520px, 100%);
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.muted-line {
+  margin: 0;
+  color: #64748b;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.metric-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.metric-card strong {
+  color: #111827;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.metric-card span {
+  color: #64748b;
+  font-size: 13px;
 }
 
 .secondary-button,

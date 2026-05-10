@@ -31,3 +31,37 @@ export async function deleteTextbook(textbookId) {
   const response = await apiClient.delete(`/api/ingestion/${textbookId}`)
   return response.data
 }
+
+export async function buildGraph(textbookId) {
+  const response = await apiClient.post('/api/graph/build', { textbook_id: textbookId })
+  return response.data
+}
+
+export async function listGraphNodes(textbookId = '') {
+  const response = await apiClient.get('/api/graph/nodes', {
+    params: textbookId ? { textbook_id: textbookId } : {},
+  })
+  return response.data
+}
+
+export async function listGraphEdges(textbookId = '') {
+  const response = await apiClient.get('/api/graph/edges', {
+    params: textbookId ? { textbook_id: textbookId } : {},
+  })
+  return response.data
+}
+
+export async function searchGraphNodes(query) {
+  const response = await apiClient.get('/api/graph/search', { params: { q: query } })
+  return response.data
+}
+
+export async function mergeGraph() {
+  const response = await apiClient.post('/api/graph/merge')
+  return response.data
+}
+
+export async function getMergeStatus() {
+  const response = await apiClient.get('/api/graph/merge/status')
+  return response.data
+}
