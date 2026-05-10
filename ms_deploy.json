@@ -1,0 +1,11 @@
+{
+  "repo_name": "Agent4Study",
+  "owner": "yanzhuchen0901",
+  "display_name": "Agent4Study",
+  "license": "apache-2.0",
+  "private": false,
+  "description": "AI 教科书知识系统：支持多教材解析、知识图谱构建与合并、RAG 问答、Agent 工作流和竞赛报告预览。",
+  "cover_image": "",
+  "sdk_type": "docker",
+  "hardware": "platform/2v-cpu-16g-mem"
+}

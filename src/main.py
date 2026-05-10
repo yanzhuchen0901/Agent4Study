@@ -1,9 +1,11 @@
 """FastAPI entrypoint for Agent4Study."""
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.api.agent_routes import router as agent_router
 from src.api.graph_routes import router as graph_router
@@ -25,7 +27,8 @@ app = FastAPI(
 
 _cors_default = (
     "http://localhost:5173,http://localhost:5174,"
-    "http://127.0.0.1:5173,http://127.0.0.1:5174"
+    "http://127.0.0.1:5173,http://127.0.0.1:5174,"
+    "http://8.130.172.27,http://8.130.172.27:80"
 )
 app.add_middleware(
     CORSMiddleware,
@@ -64,3 +67,8 @@ def health_check() -> dict:
             "report": "ready",
         },
     }
+
+
+frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
