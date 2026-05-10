@@ -13,6 +13,24 @@ const ragChunks = ref(0)
 const dedupRate = ref(0)
 const globalError = ref('')
 
+// --- 动态 Favicon ---
+function setFaviconByScheme(event) {
+  const link = document.getElementById('favicon')
+  if (!link) return
+  const isDark = event?.matches ?? window.matchMedia('(prefers-color-scheme: dark)').matches
+  link.href = isDark ? '/night.png' : '/day.png'
+}
+
+let faviconMedia
+onMounted(() => {
+  faviconMedia = window.matchMedia('(prefers-color-scheme: dark)')
+  setFaviconByScheme(faviconMedia)
+  faviconMedia.addEventListener('change', setFaviconByScheme)
+})
+onUnmounted(() => {
+  faviconMedia?.removeEventListener('change', setFaviconByScheme)
+})
+
 const tabs = [
   { name: '知识图谱', path: '/', stage: 'Graph' },
   { name: 'RAG 问答', path: '/rag', stage: 'RAG' },
@@ -80,9 +98,12 @@ onUnmounted(() => {
 <template>
   <div class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Agent4Study</p>
-        <h1>AI 教科书知识系统</h1>
+      <div class="brand">
+        <img src="/day.png" alt="Agent4Study" class="brand-logo" />
+        <div>
+          <p class="eyebrow">Agent4Study</p>
+          <h1>AI 教科书知识系统</h1>
+        </div>
       </div>
       <nav class="tabs" aria-label="Primary">
         <RouterLink
