@@ -5,6 +5,8 @@ import GraphCanvas from '../components/GraphCanvas.vue'
 import GraphFilter from '../components/GraphFilter.vue'
 import {
   buildGraph,
+  getParsedTextbook,
+  getRawTextbookUrl,
   listGraphEdges,
   listGraphNodes,
   queryGraph,
@@ -16,6 +18,8 @@ const question = ref('')
 const nodes = ref([])
 const edges = ref([])
 const selectedNode = ref(null)
+const chapterStart = ref(null)
+const chapterLinkStatus = ref('')
 const highlightedNodeIds = ref([])
 const queryResult = ref(null)
 const status = ref('')
@@ -99,6 +103,26 @@ async function handleQuery() {
 function handleNodeSelected(node) {
   selectedNode.value = node
   highlightedNodeIds.value = [node.id]
+  chapterStart.value = null
+  chapterLinkStatus.value = ''
+}
+
+async function openChapterStart() {
+  if (!selectedNode.value) return
+  chapterLinkStatus.value = ''
+  try {
+    const textbook = await getParsedTextbook(selectedNode.value.textbook_id)
+    const chapter = (textbook.chapters || []).find((item) => item.chapter_id === selectedNode.value.chapter_id)
+    const pageStart = Number(chapter?.page_start || 1)
+    chapterStart.value = pageStart
+
+    const filename = String(textbook.filename || '').toLowerCase()
+    const baseUrl = getRawTextbookUrl(selectedNode.value.textbook_id)
+    const url = filename.endsWith('.pdf') ? `${baseUrl}#page=${pageStart}` : baseUrl
+    window.open(url, '_blank', 'noopener,noreferrer')
+  } catch (error) {
+    chapterLinkStatus.value = error.response?.data?.detail || '无法打开章节原文'
+  }
 }
 
 onMounted(refreshGraph)
@@ -152,6 +176,11 @@ onMounted(refreshGraph)
           <p><strong>{{ selectedNode.name }}</strong></p>
           <p>{{ selectedNode.definition }}</p>
           <p class="muted-line">{{ selectedNode.category }} · {{ selectedNode.chapter }} · p.{{ selectedNode.page }}</p>
+          <p class="muted-line">
+            章节起始：
+            <a href="#" @click.prevent="openChapterStart">p.{{ chapterStart || '?' }}（打开原文）</a>
+          </p>
+          <p v-if="chapterLinkStatus" class="warning-line">{{ chapterLinkStatus }}</p>
           <p class="muted-line">来源: {{ selectedNode.textbook_title || selectedNode.textbook_id }}</p>
         </template>
         <p v-else class="muted-line">点击画布中的节点查看详情。</p>

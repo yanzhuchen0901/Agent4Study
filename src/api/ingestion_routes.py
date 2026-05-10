@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 
 from src.config import get_settings
 from src.ingestion.models import TextbookSchema, TextbookSummary
@@ -23,6 +24,32 @@ def _ensure_dirs() -> None:
 
 def _parsed_path(textbook_id: str) -> Path:
     return settings.parsed_dir / f"{textbook_id}.json"
+
+
+def _load_parsed(textbook_id: str) -> dict:
+    _ensure_dirs()
+    parsed_path = _parsed_path(textbook_id)
+    if not parsed_path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Textbook not found")
+    return json.loads(parsed_path.read_text(encoding="utf-8"))
+
+
+@router.get("/parsed/{textbook_id}", response_model=TextbookSchema)
+def get_parsed_textbook(textbook_id: str) -> TextbookSchema:
+    data = _load_parsed(textbook_id)
+    return TextbookSchema.model_validate(data)
+
+
+@router.get("/raw/{textbook_id}")
+def download_raw_textbook(textbook_id: str) -> FileResponse:
+    data = _load_parsed(textbook_id)
+    filename = Path(data.get("filename", "")).name
+    if not filename:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Raw file not found")
+    raw_path = settings.textbook_dir / filename
+    if not raw_path.exists() or not raw_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Raw file not found")
+    return FileResponse(path=raw_path, filename=filename, media_type="application/octet-stream")
 
 
 @router.post("/upload", response_model=TextbookSchema)
