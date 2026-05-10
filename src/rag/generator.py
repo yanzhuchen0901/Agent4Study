@@ -28,10 +28,25 @@ class RAGGenerator:
             for i, (chunk, _) in enumerate(retrieved)
         )
         try:
-            data = self.llm_client.complete_json(
-                "你是教材问答助手。只基于给定上下文回答，输出 JSON。",
-                f'问题: {query}\n上下文:\n{context}\n输出 {{"answer":"回答，必须带[来源序号]","used_sources":[1,2]}}',
+            system_prompt = "你是教材问答助手。只基于给定上下文回答，输出 JSON。"
+            few_shot = """
+示例（输入 → 输出，仅供格式参考）：
+
+问题: 什么是栈？
+上下文:
+[1] 数据结构 栈与队列 p.10
+栈是一种后进先出（LIFO）的线性表，支持push和pop操作。
+
+输出:
+{"answer":"栈是后进先出（LIFO）的线性数据结构，支持push/pop操作。[1]","used_sources":[1]}
+""".strip()
+            user_prompt = (
+                f"问题: {query}\n"
+                f"上下文:\n{context}\n\n"
+                f"{few_shot}\n\n"
+                "输出 {\"answer\":\"回答，必须带[来源序号]\",\"used_sources\":[1,2]}"
             )
+            data = self.llm_client.complete_json(system_prompt, user_prompt)
             answer = str(data.get("answer", "")).strip()
             if answer:
                 return RAGQueryResult(answer=answer, citations=citations, source_chunks=source_chunks)

@@ -35,9 +35,31 @@ class RelationExtractor:
 
     def _decide_relation(self, source: KnowledgeNode, target: KnowledgeNode) -> RelationType:
         system_prompt = "你是知识图谱关系分类助手。只输出 JSON。"
+        few_shot = """
+    示例（关系类型必须是 prerequisite/parallel/contains/applies_to）：
+
+    1) prerequisite（先修）
+    输入: A=微积分, B=梯度下降
+    输出: {"relation_type":"prerequisite","description":"理解梯度下降需要微积分基础"}
+
+    2) contains（包含）
+    输入: A=排序算法, B=快速排序
+    输出: {"relation_type":"contains","description":"快速排序属于排序算法的一种"}
+
+    3) applies_to（应用于）
+    输入: A=动态规划, B=最短路径
+    输出: {"relation_type":"applies_to","description":"动态规划可用于某些最短路径问题求解"}
+
+    4) parallel（并列/相关）
+    输入: A=队列, B=栈
+    输出: {"relation_type":"parallel","description":"二者都是线性结构，场景不同但可对比"}
+    """.strip()
         user_prompt = f"""
 判断两个概念关系，relation_type 只能是 prerequisite/parallel/contains/applies_to。
 输出 {{"relation_type":"parallel","description":"原因"}}
+
+    {few_shot}
+
 A: {source.name} - {source.definition}
 B: {target.name} - {target.definition}
 """

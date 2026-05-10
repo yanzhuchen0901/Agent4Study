@@ -43,9 +43,17 @@ class GraphQueryEngine:
     def _parse_question(self, question: str, nodes: list[KnowledgeNode]) -> tuple[dict, str | None]:
         system_prompt = "你是知识图谱查询规划助手。只输出 JSON。"
         sample_names = "、".join(node.name for node in nodes[:30])
+        few_shot = """
+    示例：
+    问题: 快速排序和归并排序有什么关系？
+    输出: {"type":"search","node":"快速排序"}
+    """.strip()
         user_prompt = f"""
 把自然语言问题转为图查询 JSON，type 只能是 neighbors/path/subgraph/search。
 输出 {{"type":"neighbors","node":"概念名","relation_type":null}}
+
+    {few_shot}
+
 可用知识点: {sample_names}
 问题: {question}
 """

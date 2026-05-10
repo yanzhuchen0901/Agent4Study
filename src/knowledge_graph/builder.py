@@ -33,9 +33,27 @@ class KnowledgeGraphBuilder:
     def _extract_nodes(self, textbook: TextbookSchema, chapter: dict) -> list[KnowledgeNode]:
         content = chapter["content"][:3500]
         system_prompt = "你是教材知识图谱抽取助手。只输出 JSON。"
+        few_shot = """
+    示例（输入 → 输出，仅供格式参考）：
+
+    输入:
+    教材: 数据结构
+    章节: 栈与队列
+    正文:
+    栈是一种后进先出（LIFO）的线性表。入栈称为 push，出栈称为 pop。栈常用于括号匹配与函数调用。
+
+    输出:
+    {"nodes":[
+      {"name":"栈","definition":"后进先出（LIFO）的线性数据结构，支持push/pop操作","category":"核心概念"},
+      {"name":"入栈","definition":"将元素压入栈顶的操作，常记为push","category":"方法"},
+      {"name":"出栈","definition":"从栈顶移除元素的操作，常记为pop","category":"方法"}
+    ]}
+    """.strip()
         user_prompt = f"""
 请从教材章节中提取 3-8 个核心知识点，输出 JSON:
 {{"nodes":[{{"name":"概念名","definition":"15-40字定义","category":"核心概念/方法/现象/定理"}}]}}
+
+    {few_shot}
 
 教材: {textbook.title}
 章节: {chapter["title"]}

@@ -129,8 +129,21 @@ class KnowledgeMerger:
     def _decide(self, group: list[KnowledgeNode], index: int) -> MergeDecision:
         affected = [node.id for node in group]
         system_prompt = "你是跨教材知识点合并裁决助手。只输出 JSON。"
-        user_prompt = "\n".join([f"- {node.id}: {node.name} / {node.definition} / {node.textbook_title}" for node in group])
-        user_prompt += '\n输出 {"action":"merge|keep|remove","reason":"原因","confidence":0.0}'
+        few_shot = """
+示例（输入 → 输出，仅供格式参考）：
+
+输入:
+- book1_ch1_node_001: 栈 / 后进先出（LIFO）的线性结构 / 数据结构
+- book2_ch3_node_014: Stack / LIFO data structure with push/pop / Algorithms
+
+输出:
+{"action":"merge","reason":"名称同义且定义等价，属于同一概念","confidence":0.9}
+""".strip()
+        user_prompt = "\n".join(
+            [f"- {node.id}: {node.name} / {node.definition} / {node.textbook_title}" for node in group]
+        )
+        user_prompt += "\n\n" + few_shot
+        user_prompt += '\n\n输出 {"action":"merge|keep|remove","reason":"原因","confidence":0.0}'
         try:
             data = self.llm_client.complete_json(system_prompt, user_prompt)
             action = data.get("action", "merge")
