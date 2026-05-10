@@ -13,32 +13,57 @@ const emit = defineEmits(['node-selected'])
 const container = ref(null)
 let cy = null
 
-const categoryColors = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#dc2626', '#0891b2']
 const textbookShapes = ['ellipse', 'rectangle', 'diamond', 'round-triangle', 'star']
 
+function degreeColor24(degree, minDegree, maxDegree) {
+  if (!Number.isFinite(degree)) return 'hsl(210, 85%, 70%)'
+  const steps = 24
+  const clampedMin = Number.isFinite(minDegree) ? minDegree : 0
+  const clampedMax = Number.isFinite(maxDegree) ? maxDegree : clampedMin
+  const denom = Math.max(1, clampedMax - clampedMin)
+  const ratio = Math.min(1, Math.max(0, (degree - clampedMin) / denom))
+  const index = Math.round(ratio * (steps - 1))
+  const t = index / (steps - 1)
+
+  const hue = 210 * (1 - t)
+  const lightness = 70 - 30 * t
+  return `hsl(${hue.toFixed(0)}, 85%, ${lightness.toFixed(0)}%)`
+}
+
 const elements = computed(() => {
-  const categories = [...new Set(props.nodes.map((node) => node.category || '核心概念'))]
-  const colorByCategory = Object.fromEntries(
-    categories.map((category, index) => [category, categoryColors[index % categoryColors.length]]),
-  )
   const textbooks = [...new Set(props.nodes.map((node) => node.textbook_id || '').filter(Boolean))]
   const shapeByTextbook = Object.fromEntries(
     textbooks.map((id, index) => [id, textbookShapes[index % textbookShapes.length]]),
   )
+
+  const degreeByNodeId = new Map()
+  for (const edge of props.edges) {
+    const source = edge.source
+    const target = edge.target
+    if (source) degreeByNodeId.set(source, (degreeByNodeId.get(source) || 0) + 1)
+    if (target) degreeByNodeId.set(target, (degreeByNodeId.get(target) || 0) + 1)
+  }
+  const degrees = props.nodes.map((node) => degreeByNodeId.get(node.id) || 0)
+  const minDegree = degrees.length ? Math.min(...degrees) : 0
+  const maxDegree = degrees.length ? Math.max(...degrees) : 0
+
   return [
-    ...props.nodes.map((node) => ({
-      data: {
-        ...node,
-        label: node.name,
-        color: colorByCategory[node.category || '核心概念'],
-        size: 36 + Math.min((node.frequency || 1) * 5, 32),
-        shape: shapeByTextbook[node.textbook_id || ''] || 'ellipse',
-      },
-    })),
+    ...props.nodes.map((node) => {
+      const degree = degreeByNodeId.get(node.id) || 0
+      return {
+        data: {
+          ...node,
+          label: node.name,
+          degree,
+          color: degreeColor24(degree, minDegree, maxDegree),
+          size: 36 + Math.min((node.frequency || 1) * 5, 32),
+          shape: shapeByTextbook[node.textbook_id || ''] || 'ellipse',
+        },
+      }
+    }),
     ...props.edges.map((edge) => ({
       data: {
         ...edge,
-        label: edge.relation_type,
       },
     })),
   ]
@@ -102,8 +127,6 @@ async function renderGraph() {
           selector: 'edge',
           style: {
             width: 2,
-            label: 'data(label)',
-            'font-size': 9,
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
             'line-color': '#94a3b8',
@@ -114,7 +137,8 @@ async function renderGraph() {
         { selector: 'edge[relation_type = "parallel"]', style: { 'line-color': '#16a34a', 'target-arrow-color': '#16a34a' } },
         { selector: 'edge[relation_type = "contains"]', style: { 'line-color': '#d97706', 'target-arrow-color': '#d97706' } },
         { selector: 'edge[relation_type = "applies_to"]', style: { 'line-color': '#7c3aed', 'target-arrow-color': '#7c3aed' } },
-        { selector: '.highlighted', style: { 'border-width': 4, 'border-color': '#0f172a', 'z-index': 10 } },
+        { selector: 'node.highlighted', style: { 'border-width': 4, 'border-color': '#0f172a', 'z-index': 10 } },
+        { selector: 'edge.highlighted', style: { width: 6, 'arrow-scale': 1.35, 'z-index': 10 } },
         { selector: '.faded', style: { opacity: 0.22 } },
       ],
     })

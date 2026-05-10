@@ -167,10 +167,10 @@ onMounted(refreshGraph)
 
       <section class="side-panel">
         <h3>图例</h3>
-        <p class="legend-line prerequisite">prerequisite</p>
-        <p class="legend-line parallel">parallel</p>
-        <p class="legend-line contains">contains</p>
-        <p class="legend-line applies">applies_to</p>
+        <p class="legend-line prerequisite">先修</p>
+        <p class="legend-line parallel">并行</p>
+        <p class="legend-line contains">包含</p>
+        <p class="legend-line applies">适用</p>
       </section>
     </aside>
   </section>

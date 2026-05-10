@@ -8,6 +8,13 @@ defineProps({
   },
 })
 
+const relationTypeLabels = {
+  prerequisite: '先修',
+  parallel: '并行',
+  contains: '包含',
+  applies_to: '适用',
+}
+
 const emit = defineEmits(['update:modelValue', 'search'])
 
 function updateField(field, value) {
@@ -33,7 +40,7 @@ function modelValueFallback() {
     </select>
     <select :value="modelValue.relationType" @change="updateField('relationType', $event.target.value)">
       <option value="">全部关系</option>
-      <option v-for="type in relationTypes" :key="type" :value="type">{{ type }}</option>
+      <option v-for="type in relationTypes" :key="type" :value="type">{{ relationTypeLabels[type] || type }}</option>
     </select>
     <select :value="modelValue.layout" @change="updateField('layout', $event.target.value)">
       <option value="cose">力导向</option>
