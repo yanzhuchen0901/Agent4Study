@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.agent_routes import router as agent_router
 from src.api.graph_routes import router as graph_router
+from src.api.hierarchy_routes import router as hierarchy_router
 from src.api.ingestion_routes import router as ingestion_router
 from src.api.rag_routes import router as rag_router
 from src.api.report_routes import router as report_router
@@ -39,6 +40,7 @@ app.add_middleware(
 
 app.include_router(ingestion_router)
 app.include_router(graph_router)
+app.include_router(hierarchy_router)
 app.include_router(rag_router)
 app.include_router(agent_router)
 app.include_router(settings_router)

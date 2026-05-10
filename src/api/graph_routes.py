@@ -61,10 +61,18 @@ def build_graph(request: BuildGraphRequest) -> GraphBuildResult:
 
 
 @router.get("/nodes", response_model=list[KnowledgeNode])
-def get_nodes(textbook_id: str | None = None) -> list[KnowledgeNode]:
+def get_nodes(
+    textbook_id: str | None = None,
+    chapter_id: str | None = None,
+    level: str | None = None,
+) -> list[KnowledgeNode]:
     nodes = GraphStore().load_nodes()
     if textbook_id:
         nodes = [node for node in nodes if node.textbook_id == textbook_id]
+    if chapter_id:
+        nodes = [node for node in nodes if node.chapter_id == chapter_id]
+    if level:
+        nodes = [node for node in nodes if node.level == level]
     return nodes
 
 
@@ -72,12 +80,15 @@ def get_nodes(textbook_id: str | None = None) -> list[KnowledgeNode]:
 def get_edges(
     textbook_id: str | None = None,
     relation_type: RelationType | None = None,
+    level: str | None = None,
 ) -> list[KnowledgeEdge]:
     edges = GraphStore().load_edges()
     if textbook_id:
         edges = [edge for edge in edges if edge.textbook_id == textbook_id]
     if relation_type:
         edges = [edge for edge in edges if edge.relation_type == relation_type]
+    if level:
+        edges = [edge for edge in edges if getattr(edge, 'level', 'knowledge') == level]
     return edges
 
 
