@@ -24,6 +24,7 @@ class Settings:
     llm_provider: str = "deepseek"
     llm_api_key: str = ""
     llm_model: str = ""
+    llm_base_url: str = "https://api.deepseek.com"
 
     embedding_provider: str = "local"
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
@@ -46,6 +47,7 @@ def get_settings() -> Settings:
         llm_provider=os.getenv("LLM_PROVIDER", "deepseek"),
         llm_api_key=os.getenv("LLM_API_KEY", ""),
         llm_model=os.getenv("LLM_MODEL", ""),
+        llm_base_url=os.getenv("LLM_BASE_URL", "https://api.deepseek.com"),
         embedding_provider=os.getenv("EMBEDDING_PROVIDER", "local"),
         embedding_model=os.getenv(
             "EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"
