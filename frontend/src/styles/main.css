@@ -307,10 +307,119 @@ textarea {
 }
 
 .rag-view,
-.rag-result {
+.rag-result,
+.agent-view,
+.agent-result {
   display: grid;
   gap: 16px;
   align-content: start;
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.agent-query-panel {
+  align-self: start;
+}
+
+.workflow-diagram {
+  min-height: 260px;
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.workflow-diagram svg {
+  max-width: 100%;
+}
+
+.answer-block {
+  white-space: pre-wrap;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.soft-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #075985;
+  background: #f0f9ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.step-list {
+  display: grid;
+  gap: 10px;
+}
+
+.step-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.step-card p {
+  margin: 0;
+}
+
+.step-card small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-pill.completed {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.status-pill.failed {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.status-pill.running,
+.status-pill.pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.citation-list {
+  display: grid;
+  gap: 8px;
 }
 
 .citation-card {
@@ -427,7 +536,8 @@ th {
   }
 
   .graph-view,
-  .graph-filter {
+  .graph-filter,
+  .agent-grid {
     grid-template-columns: 1fr;
   }
 }

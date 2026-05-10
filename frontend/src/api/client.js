@@ -85,3 +85,8 @@ export async function getRAGStatus() {
   const response = await apiClient.get('/api/rag/status')
   return response.data
 }
+
+export async function queryAgent(question) {
+  const response = await apiClient.post('/api/agent/query', { question })
+  return response.data
+}
