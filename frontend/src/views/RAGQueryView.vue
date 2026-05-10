@@ -1,13 +1,14 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 
+import ChatPanel from '../components/ChatPanel.vue'
 import { getRAGStatus, indexRAG, queryRAG } from '../api/client'
 
 const textbookId = ref('')
 const question = ref('')
 const topK = ref(5)
 const status = ref(null)
-const result = ref(null)
+const messages = ref([])
 const message = ref('')
 const isBusy = ref(false)
 
@@ -40,8 +41,22 @@ async function handleQuery() {
   }
   isBusy.value = true
   message.value = '正在检索并生成回答...'
+  const currentQuestion = question.value.trim()
+  messages.value.push({
+    id: `user-${Date.now()}`,
+    role: 'user',
+    content: currentQuestion,
+  })
+  question.value = ''
   try {
-    result.value = await queryRAG(question.value.trim(), topK.value)
+    const result = await queryRAG(currentQuestion, topK.value)
+    messages.value.push({
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: result.answer,
+      citations: result.citations,
+      sourceChunks: result.source_chunks,
+    })
     message.value = '回答完成'
   } catch (error) {
     message.value = error.response?.data?.detail || '问答失败'
@@ -77,6 +92,8 @@ onMounted(refreshStatus)
       <button class="secondary-button" :disabled="isBusy" @click="refreshStatus">刷新状态</button>
     </div>
 
+    <ChatPanel :messages="messages" :busy="isBusy" />
+
     <div class="side-panel">
       <textarea v-model="question" rows="4" placeholder="输入教材问题，例如：什么是排序算法？"></textarea>
       <div class="form-row">
@@ -84,29 +101,6 @@ onMounted(refreshStatus)
         <button class="secondary-button" :disabled="isBusy" @click="handleQuery">发送</button>
       </div>
       <p class="muted-line">{{ message }}</p>
-    </div>
-
-    <div v-if="result" class="rag-result">
-      <section class="side-panel">
-        <h3>回答</h3>
-        <p>{{ result.answer }}</p>
-      </section>
-
-      <section class="side-panel">
-        <h3>引用来源</h3>
-        <div v-for="citation in result.citations" :key="citation.chunk_id" class="citation-card">
-          <strong>{{ citation.textbook }}</strong>
-          <span>{{ citation.chapter }} · p.{{ citation.page }} · {{ Math.round(citation.relevance_score * 100) }}%</span>
-        </div>
-      </section>
-
-      <section class="side-panel">
-        <h3>原文片段</h3>
-        <details v-for="(chunk, index) in result.source_chunks" :key="index">
-          <summary>片段 {{ index + 1 }}</summary>
-          <p>{{ chunk }}</p>
-        </details>
-      </section>
     </div>
   </section>
 </template>
