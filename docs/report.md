@@ -1,6 +1,6 @@
 # Agent4Study 竞赛报告
 
-生成时间：2026-05-10 11:49
+生成时间：2026-05-10 13:35
 
 ## 1. Abstract
 
@@ -24,13 +24,13 @@ Agent4Study 是一个面向多教材学习场景的 AI 全栈系统，覆盖教�
 
 | Metric | Value |
 | --- | ---: |
-| Parsed textbook ids in RAG index | 0 |
-| RAG chunks | 0 |
-| Embedding dimension | 0 |
-| Knowledge graph nodes | 0 |
-| Knowledge graph edges | 0 |
-| Merge decisions | 0 |
-| Estimated deduplication rate | 0.0% |
+| Parsed textbook ids in RAG index | 1 |
+| RAG chunks | 5 |
+| Embedding dimension | 384 |
+| Knowledge graph nodes | 20 |
+| Knowledge graph edges | 30 |
+| Merge decisions | 3 |
+| Estimated deduplication rate | 13.04% |
 
 ### 4.2 RAG Chunk Size 对比
 
