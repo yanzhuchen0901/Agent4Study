@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install --no-cache-dir --default-timeout=600 -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 
 COPY src ./src
 COPY report ./report

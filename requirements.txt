@@ -13,4 +13,5 @@ faiss-cpu
 rank-bm25
 openai
 httpx
+easyocr
 jieba
