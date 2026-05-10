@@ -13,6 +13,9 @@ const preferences = ref({
   defaultTopK: Number(localStorage.getItem('a4s.defaultTopK') || 5),
   graphLayout: localStorage.getItem('a4s.graphLayout') || 'cose',
   enableSse: localStorage.getItem('a4s.enableSse') !== 'false',
+  llmBaseUrl: localStorage.getItem('a4s.llmBaseUrl') || '',
+  llmApiKey: localStorage.getItem('a4s.llmApiKey') || '',
+  llmModel: localStorage.getItem('a4s.llmModel') || '',
 })
 
 async function refreshList() {
@@ -57,6 +60,9 @@ function savePreferences() {
   localStorage.setItem('a4s.defaultTopK', String(preferences.value.defaultTopK))
   localStorage.setItem('a4s.graphLayout', preferences.value.graphLayout)
   localStorage.setItem('a4s.enableSse', String(preferences.value.enableSse))
+  localStorage.setItem('a4s.llmBaseUrl', preferences.value.llmBaseUrl)
+  localStorage.setItem('a4s.llmApiKey', preferences.value.llmApiKey)
+  localStorage.setItem('a4s.llmModel', preferences.value.llmModel)
   status.value = '前端偏好已保存'
 }
 
@@ -96,6 +102,9 @@ onMounted(async () => {
       <section class="side-panel">
         <h3>前端偏好</h3>
         <div class="settings-form">
+          <label>LLM Base URL <input v-model="preferences.llmBaseUrl" placeholder="https://api.openai.com/v1" /></label>
+          <label>LLM API Key <input v-model="preferences.llmApiKey" type="password" placeholder="sk-..." /></label>
+          <label>LLM Model <input v-model="preferences.llmModel" placeholder="gpt-4.1-mini" /></label>
           <label>API 地址 <input v-model="preferences.apiBase" /></label>
           <label>默认 top_k <input v-model.number="preferences.defaultTopK" type="number" min="1" max="10" /></label>
           <label>

@@ -13,6 +13,7 @@ from src.rag.generator import RAGGenerator
 from src.rag.models import RAGIndexResult, RAGQueryResult, RAGStatus
 from src.rag.retriever import HybridRetriever
 from src.rag.vector_store import VectorStore
+from src.knowledge_graph.llm_client import GraphLLMClient
 
 
 router = APIRouter(prefix="/api/rag", tags=["rag"])
@@ -25,6 +26,7 @@ class RAGIndexRequest(BaseModel):
 class RAGQueryRequest(BaseModel):
     query: str
     top_k: int = 5
+    llm_config: dict | None = None
 
 
 @router.post("/index", response_model=RAGIndexResult)
@@ -56,7 +58,8 @@ def query_rag(request: RAGQueryRequest) -> RAGQueryResult:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Query is required")
     top_k = max(1, min(request.top_k, 10))
     retrieved = HybridRetriever().retrieve(request.query.strip(), top_k=top_k)
-    return RAGGenerator().generate(request.query.strip(), retrieved)
+    llm_client = GraphLLMClient(request.llm_config) if request.llm_config else None
+    return RAGGenerator(llm_client=llm_client).generate(request.query.strip(), retrieved)
 
 
 @router.get("/status", response_model=RAGStatus)

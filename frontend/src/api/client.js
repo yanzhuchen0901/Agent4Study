@@ -44,8 +44,20 @@ export async function deleteTextbook(textbookId) {
   return response.data
 }
 
+export function getLLMConfig() {
+  const apiKey = (localStorage.getItem('a4s.llmApiKey') || '').trim()
+  const baseUrl = (localStorage.getItem('a4s.llmBaseUrl') || '').trim()
+  const model = (localStorage.getItem('a4s.llmModel') || '').trim()
+
+  const config = {}
+  if (apiKey) config.api_key = apiKey
+  if (baseUrl) config.base_url = baseUrl
+  if (model) config.model = model
+  return Object.keys(config).length ? config : null
+}
+
 export async function buildGraph(textbookId) {
-  const response = await apiClient.post('/api/graph/build', { textbook_id: textbookId })
+  const response = await apiClient.post('/api/graph/build', { textbook_id: textbookId, llm_config: getLLMConfig() })
   return response.data
 }
 
@@ -69,17 +81,17 @@ export async function searchGraphNodes(query) {
 }
 
 export async function mergeGraph() {
-  const response = await apiClient.post('/api/graph/merge')
+  const response = await apiClient.post('/api/graph/merge', { llm_config: getLLMConfig() })
   return response.data
 }
 
 export async function previewMergeGraph() {
-  const response = await apiClient.post('/api/graph/merge/preview')
+  const response = await apiClient.post('/api/graph/merge/preview', { llm_config: getLLMConfig() })
   return response.data
 }
 
 export async function confirmMergeGraph(decisions) {
-  const response = await apiClient.post('/api/graph/merge/confirm', { decisions })
+  const response = await apiClient.post('/api/graph/merge/confirm', { decisions, llm_config: getLLMConfig() })
   return response.data
 }
 
@@ -89,7 +101,7 @@ export async function getMergeStatus() {
 }
 
 export async function queryGraph(question, depth = 2) {
-  const response = await apiClient.post('/api/graph/query', { question, depth })
+  const response = await apiClient.post('/api/graph/query', { question, depth, llm_config: getLLMConfig() })
   return response.data
 }
 
@@ -99,7 +111,7 @@ export async function indexRAG(textbookId) {
 }
 
 export async function queryRAG(query, topK = 5) {
-  const response = await apiClient.post('/api/rag/query', { query, top_k: topK })
+  const response = await apiClient.post('/api/rag/query', { query, top_k: topK, llm_config: getLLMConfig() })
   return response.data
 }
 
@@ -109,7 +121,7 @@ export async function getRAGStatus() {
 }
 
 export async function queryAgent(question) {
-  const response = await apiClient.post('/api/agent/query', { question })
+  const response = await apiClient.post('/api/agent/query', { question, llm_config: getLLMConfig() })
   return response.data
 }
 

@@ -6,14 +6,16 @@ from src.agent.agent_planner import PlannerAgent
 from src.agent.agent_retriever import KnowledgeGraphAgent, SearcherAgent
 from src.agent.agent_synthesizer import SynthesizerAgent
 from src.agent.agent_workflow import build_workflow_mermaid
+from src.knowledge_graph.llm_client import GraphLLMClient
 
 
 class AgentOrchestrator:
-    def __init__(self) -> None:
+    def __init__(self, llm_config: dict | None = None) -> None:
+        llm_client = GraphLLMClient(llm_config) if llm_config else None
         self.decomposer = DecomposerAgent()
         self.planner = PlannerAgent()
-        self.searcher = SearcherAgent()
-        self.kg_agent = KnowledgeGraphAgent()
+        self.searcher = SearcherAgent(llm_client=llm_client)
+        self.kg_agent = KnowledgeGraphAgent(llm_client=llm_client)
         self.synthesizer = SynthesizerAgent()
 
     def run(self, question: str) -> AgentResult:

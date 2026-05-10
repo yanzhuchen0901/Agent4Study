@@ -16,6 +16,7 @@ router = APIRouter(prefix="/api/agent", tags=["agent"])
 
 class AgentQueryRequest(BaseModel):
     question: str
+    llm_config: dict | None = None
 
 
 @router.post("/query", response_model=AgentResult)
@@ -23,7 +24,7 @@ def query_agent(request: AgentQueryRequest) -> AgentResult:
     question = request.question.strip()
     if not question:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Question is required")
-    return AgentOrchestrator().run(question)
+    return AgentOrchestrator(llm_config=request.llm_config).run(question)
 
 
 def _sse(event: str, data: dict) -> str:

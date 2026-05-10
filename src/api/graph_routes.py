@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from src.knowledge_graph.builder import KnowledgeGraphBuilder
 from src.knowledge_graph.graph_store import GraphStore
+from src.knowledge_graph.llm_client import GraphLLMClient
 from src.knowledge_graph.merger import KnowledgeMerger
 from src.knowledge_graph.models import GraphBuildResult, GraphQueryResult, KnowledgeEdge, KnowledgeNode, MergeStatus, RelationType
 from src.knowledge_graph.query_engine import GraphQueryEngine
@@ -13,13 +14,21 @@ from src.knowledge_graph.query_engine import GraphQueryEngine
 router = APIRouter(prefix="/api/graph", tags=["graph"])
 
 
+class LLMConfig(BaseModel):
+    api_key: str | None = None
+    base_url: str | None = None
+    model: str | None = None
+
+
 class BuildGraphRequest(BaseModel):
     textbook_id: str
+    llm_config: LLMConfig | None = None
 
 
 class GraphQueryRequest(BaseModel):
     question: str
     depth: int = 2
+    llm_config: LLMConfig | None = None
 
 
 class MergeReview(BaseModel):
@@ -30,13 +39,19 @@ class MergeReview(BaseModel):
 
 class MergeConfirmRequest(BaseModel):
     decisions: list[MergeReview]
+    llm_config: LLMConfig | None = None
+
+
+class MergeRequest(BaseModel):
+    llm_config: LLMConfig | None = None
 
 
 @router.post("/build", response_model=GraphBuildResult)
 def build_graph(request: BuildGraphRequest) -> GraphBuildResult:
     store = GraphStore()
     try:
-        result = KnowledgeGraphBuilder().build_from_parsed(request.textbook_id)
+        llm_client = GraphLLMClient(request.llm_config.model_dump(exclude_none=True)) if request.llm_config else None
+        result = KnowledgeGraphBuilder(llm_client=llm_client).build_from_parsed(request.textbook_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except Exception as exc:
@@ -82,22 +97,26 @@ def search_nodes(q: str = Query(min_length=1)) -> list[KnowledgeNode]:
 def query_graph(request: GraphQueryRequest) -> GraphQueryResult:
     if not request.question.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Question is required")
-    return GraphQueryEngine().query(request.question.strip(), max(1, min(request.depth, 3)))
+    llm_client = GraphLLMClient(request.llm_config.model_dump(exclude_none=True)) if request.llm_config else None
+    return GraphQueryEngine(llm_client=llm_client).query(request.question.strip(), max(1, min(request.depth, 3)))
 
 
 @router.post("/merge", response_model=MergeStatus)
-def merge_graph() -> MergeStatus:
-    return KnowledgeMerger().merge_cross_books()
+def merge_graph(request: MergeRequest | None = None) -> MergeStatus:
+    llm_client = GraphLLMClient(request.llm_config.model_dump(exclude_none=True)) if request and request.llm_config else None
+    return KnowledgeMerger(llm_client=llm_client).merge_cross_books()
 
 
 @router.post("/merge/preview", response_model=MergeStatus)
-def preview_merge() -> MergeStatus:
-    return KnowledgeMerger().preview()
+def preview_merge(request: MergeRequest | None = None) -> MergeStatus:
+    llm_client = GraphLLMClient(request.llm_config.model_dump(exclude_none=True)) if request and request.llm_config else None
+    return KnowledgeMerger(llm_client=llm_client).preview()
 
 
 @router.post("/merge/confirm", response_model=MergeStatus)
 def confirm_merge(request: MergeConfirmRequest) -> MergeStatus:
-    return KnowledgeMerger().confirm([review.model_dump() for review in request.decisions])
+    llm_client = GraphLLMClient(request.llm_config.model_dump(exclude_none=True)) if request.llm_config else None
+    return KnowledgeMerger(llm_client=llm_client).confirm([review.model_dump() for review in request.decisions])
 
 
 @router.get("/merge/status", response_model=MergeStatus)

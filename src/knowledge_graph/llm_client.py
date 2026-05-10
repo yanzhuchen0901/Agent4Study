@@ -12,22 +12,34 @@ class LLMClientError(RuntimeError):
 
 
 class GraphLLMClient:
-    def __init__(self) -> None:
+    def __init__(self, llm_config: dict | None = None) -> None:
         self.settings = get_settings()
+        self.llm_config = llm_config or {}
+
+    def _pick(self, key: str, fallback: str) -> str:
+        value = self.llm_config.get(key)
+        if value is None:
+            return fallback
+        text = str(value).strip()
+        return text or fallback
 
     def complete_json(self, system_prompt: str, user_prompt: str) -> dict:
-        if not self.settings.llm_api_key:
+        api_key = self._pick("api_key", self.settings.llm_api_key)
+        model = self._pick("model", self.settings.llm_model)
+        base_url = self._pick("base_url", self.settings.llm_base_url)
+
+        if not api_key:
             raise LLMClientError("LLM_API_KEY is not configured")
-        if not self.settings.llm_model:
+        if not model:
             raise LLMClientError("LLM_MODEL is not configured")
 
         client = OpenAI(
-            api_key=self.settings.llm_api_key,
-            base_url=self.settings.llm_base_url,
+            api_key=api_key,
+            base_url=base_url,
             timeout=8.0,
         )
         response = client.chat.completions.create(
-            model=self.settings.llm_model,
+            model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
