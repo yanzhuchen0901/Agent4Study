@@ -31,8 +31,17 @@ class GraphStore:
         self.edges_path.write_text(json.dumps([edge.model_dump() for edge in edges], ensure_ascii=False, indent=2), encoding="utf-8")
 
     def upsert(self, new_nodes: list[KnowledgeNode], new_edges: list[KnowledgeEdge], textbook_id: str | None = None) -> None:
-        nodes = [node for node in self.load_nodes() if textbook_id is None or node.textbook_id != textbook_id]
-        edges = [edge for edge in self.load_edges() if textbook_id is None or edge.textbook_id != textbook_id]
+        nodes = [node for node in self.load_nodes()
+                 if textbook_id is None or not (node.textbook_id == textbook_id and node.level == "knowledge")]
+        edges = [edge for edge in self.load_edges()
+                 if textbook_id is None or not (edge.textbook_id == textbook_id and getattr(edge, 'level', 'knowledge') == "knowledge")]
+        node_by_id = {node.id: node for node in nodes + new_nodes}
+        edge_by_id = {edge.id: edge for edge in edges + new_edges}
+        self.save(list(node_by_id.values()), list(edge_by_id.values()))
+
+    def upsert_level(self, level: str, new_nodes: list[KnowledgeNode], new_edges: list[KnowledgeEdge]) -> None:
+        nodes = [node for node in self.load_nodes() if node.level != level]
+        edges = [edge for edge in self.load_edges() if getattr(edge, 'level', 'knowledge') != level]
         node_by_id = {node.id: node for node in nodes + new_nodes}
         edge_by_id = {edge.id: edge for edge in edges + new_edges}
         self.save(list(node_by_id.values()), list(edge_by_id.values()))

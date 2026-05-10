@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-RelationType = Literal["prerequisite", "parallel", "contains", "applies_to"]
+RelationType = Literal["prerequisite", "parallel", "contains", "applies_to", "overlap"]
 MergeAction = Literal["merge", "keep", "remove"]
 
 
@@ -14,13 +14,14 @@ class KnowledgeNode(BaseModel):
     name: str
     definition: str = ""
     category: str = "核心概念"
-    textbook_id: str
+    textbook_id: str = ""
     textbook_title: str = ""
-    chapter_id: str
-    chapter: str
+    chapter_id: str = ""
+    chapter: str = ""
     page: int = 1
     frequency: int = 1
     source_node_ids: list[str] = Field(default_factory=list)
+    level: str = "knowledge"
 
 
 class KnowledgeEdge(BaseModel):
@@ -31,6 +32,7 @@ class KnowledgeEdge(BaseModel):
     description: str = ""
     textbook_id: str = ""
     chapter_id: str = ""
+    level: str = "knowledge"
 
 
 class MergeDecision(BaseModel):
