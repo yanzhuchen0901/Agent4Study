@@ -6,7 +6,7 @@ import { getRAGStatus, indexRAG, queryRAG } from '../api/client'
 
 const textbookId = ref('')
 const question = ref('')
-const topK = ref(5)
+const topK = ref(Number(localStorage.getItem('a4s.defaultTopK') || 5))
 const status = ref(null)
 const messages = ref([])
 const message = ref('')

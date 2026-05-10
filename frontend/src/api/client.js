@@ -5,6 +5,18 @@ export const apiClient = axios.create({
   timeout: 10000,
 })
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    window.dispatchEvent(
+      new CustomEvent('a4s-api-error', {
+        detail: error.response?.data?.detail || error.message || '网络请求失败',
+      }),
+    )
+    return Promise.reject(error)
+  },
+)
+
 export async function getHealth() {
   const response = await apiClient.get('/health')
   return response.data

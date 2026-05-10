@@ -1,6 +1,6 @@
 <script setup>
 import mermaid from 'mermaid'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 import { queryAgent } from '../api/client'
 
@@ -24,6 +24,10 @@ const isBusy = ref(false)
 const workflowSvg = ref('')
 const streamEnabled = ref(localStorage.getItem('a4s.enableSse') !== 'false')
 let eventSource = null
+
+watch(streamEnabled, (value) => {
+  localStorage.setItem('a4s.enableSse', String(value))
+})
 
 function summarizeOutput(output) {
   if (!output) {

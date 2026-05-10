@@ -1,12 +1,17 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
-import { getHealth } from './api/client'
+import { getHealth, getMergeStatus, getRAGStatus, listGraphNodes, listTextbooks } from './api/client'
 
 const route = useRoute()
 const backendStatus = ref('checking')
 const backendVersion = ref('-')
+const textbookCount = ref(0)
+const nodeCount = ref(0)
+const ragChunks = ref(0)
+const dedupRate = ref(0)
+const globalError = ref('')
 
 const tabs = [
   { name: '知识图谱', path: '/', stage: 'Graph' },
@@ -33,7 +38,43 @@ async function refreshHealth() {
   }
 }
 
-onMounted(refreshHealth)
+async function refreshGlobalStats() {
+  const [books, nodes, ragStatus, mergeStatus] = await Promise.allSettled([
+    listTextbooks(),
+    listGraphNodes(),
+    getRAGStatus(),
+    getMergeStatus(),
+  ])
+  if (books.status === 'fulfilled') {
+    textbookCount.value = books.value.length
+  }
+  if (nodes.status === 'fulfilled') {
+    nodeCount.value = nodes.value.length
+  }
+  if (ragStatus.status === 'fulfilled') {
+    ragChunks.value = ragStatus.value.chunks || 0
+  }
+  if (mergeStatus.status === 'fulfilled') {
+    dedupRate.value = mergeStatus.value.deduplication_rate || 0
+  }
+}
+
+function handleGlobalError(event) {
+  globalError.value = event.detail
+  window.setTimeout(() => {
+    globalError.value = ''
+  }, 3600)
+}
+
+onMounted(() => {
+  refreshHealth()
+  refreshGlobalStats()
+  window.addEventListener('a4s-api-error', handleGlobalError)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('a4s-api-error', handleGlobalError)
+})
 </script>
 
 <template>
@@ -56,6 +97,7 @@ onMounted(refreshHealth)
     </header>
 
     <main class="workspace">
+      <div v-if="globalError" class="global-error">{{ globalError }}</div>
       <RouterView />
     </main>
 
@@ -63,6 +105,10 @@ onMounted(refreshHealth)
       <span>后端连接状态: {{ backendStatus }}</span>
       <span>版本: {{ backendVersion }}</span>
       <span>当前阶段: {{ currentStage }}</span>
+      <span>教材: {{ textbookCount }}</span>
+      <span>节点: {{ nodeCount }}</span>
+      <span>RAG chunks: {{ ragChunks }}</span>
+      <span>去重率: {{ Math.round(dedupRate * 100) }}%</span>
     </footer>
   </div>
 </template>

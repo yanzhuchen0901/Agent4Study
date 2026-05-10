@@ -20,7 +20,7 @@ const highlightedNodeIds = ref([])
 const queryResult = ref(null)
 const status = ref('')
 const isBusy = ref(false)
-const filters = ref({ category: '', relationType: '', keyword: '', layout: 'cose' })
+const filters = ref({ category: '', relationType: '', keyword: '', layout: localStorage.getItem('a4s.graphLayout') || 'cose' })
 
 const categories = computed(() => [...new Set(nodes.value.map((node) => node.category).filter(Boolean))])
 const relationTypes = computed(() => [...new Set(edges.value.map((edge) => edge.relation_type).filter(Boolean))])

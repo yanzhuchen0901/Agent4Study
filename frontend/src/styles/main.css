@@ -92,6 +92,17 @@ textarea {
   padding: 24px;
 }
 
+.global-error {
+  margin-bottom: 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #991b1b;
+  background: #fef2f2;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .view-panel {
   display: flex;
   min-height: calc(100vh - 176px);
