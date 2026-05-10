@@ -22,6 +22,8 @@ const result = ref(null)
 const message = ref('')
 const isBusy = ref(false)
 const workflowSvg = ref('')
+const streamEnabled = ref(localStorage.getItem('a4s.enableSse') !== 'false')
+let eventSource = null
 
 function summarizeOutput(output) {
   if (!output) {
@@ -57,8 +59,20 @@ async function handleQuery() {
     return
   }
   isBusy.value = true
-  message.value = 'Agent 正在分解问题、检索知识库并综合回答...'
+  message.value = streamEnabled.value ? 'Agent 正在实时执行...' : 'Agent 正在分解问题、检索知识库并综合回答...'
   workflowSvg.value = ''
+  result.value = {
+    question: question.value.trim(),
+    sub_questions: [],
+    steps: [],
+    answer: '',
+    citations: [],
+    workflow_mermaid: '',
+  }
+  if (streamEnabled.value) {
+    startStream(question.value.trim())
+    return
+  }
   try {
     result.value = await queryAgent(question.value.trim())
     await renderWorkflow(result.value.workflow_mermaid)
@@ -69,6 +83,43 @@ async function handleQuery() {
   } finally {
     isBusy.value = false
   }
+}
+
+function startStream(currentQuestion) {
+  if (eventSource) {
+    eventSource.close()
+  }
+  eventSource = new EventSource(`/api/agent/query/stream?question=${encodeURIComponent(currentQuestion)}`)
+  eventSource.addEventListener('started', (event) => {
+    const data = JSON.parse(event.data)
+    result.value.sub_questions = data.sub_questions || []
+  })
+  eventSource.addEventListener('step', (event) => {
+    result.value.steps.push(JSON.parse(event.data))
+  })
+  eventSource.addEventListener('completed', async (event) => {
+    result.value = JSON.parse(event.data)
+    await renderWorkflow(result.value.workflow_mermaid)
+    message.value = 'Agent 回答完成'
+    isBusy.value = false
+    eventSource.close()
+  })
+  eventSource.addEventListener('error', async (event) => {
+    if (event.data) {
+      message.value = JSON.parse(event.data).detail || '实时查询失败，已尝试普通查询'
+    }
+    eventSource.close()
+    try {
+      result.value = await queryAgent(currentQuestion)
+      await renderWorkflow(result.value.workflow_mermaid)
+      message.value = 'Agent 回答完成'
+    } catch (error) {
+      result.value = null
+      message.value = error.response?.data?.detail || 'Agent 查询失败'
+    } finally {
+      isBusy.value = false
+    }
+  })
 }
 </script>
 
@@ -91,6 +142,10 @@ async function handleQuery() {
         <button class="secondary-button" :disabled="isBusy" @click="handleQuery">
           {{ isBusy ? '执行中' : '开始分析' }}
         </button>
+        <label class="inline-toggle">
+          <input v-model="streamEnabled" type="checkbox" />
+          <span>实时输出</span>
+        </label>
         <p class="muted-line">{{ message }}</p>
       </section>
 

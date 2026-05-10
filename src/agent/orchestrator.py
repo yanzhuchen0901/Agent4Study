@@ -17,9 +17,24 @@ class AgentOrchestrator:
         self.synthesizer = SynthesizerAgent()
 
     def run(self, question: str) -> AgentResult:
+        executed = list(self.iter_steps(question))
         sub_questions = self.decomposer.run(question)
-        steps = self.planner.run(sub_questions)
-        executed: list[AgentStep] = []
+        synthesized = self.synthesizer.run({"question": question, "steps": executed})
+        return AgentResult(
+            question=question,
+            sub_questions=sub_questions,
+            steps=executed,
+            answer=synthesized["answer"],
+            citations=synthesized["citations"],
+            workflow_mermaid=build_workflow_mermaid(executed),
+        )
+
+    def plan(self, question: str) -> tuple[list[str], list[AgentStep]]:
+        sub_questions = self.decomposer.run(question)
+        return sub_questions, self.planner.run(sub_questions)
+
+    def iter_steps(self, question: str):
+        _, steps = self.plan(question)
         for step in steps:
             try:
                 step.status = "running"
@@ -31,14 +46,4 @@ class AgentOrchestrator:
             except Exception as exc:
                 step.status = "failed"
                 step.output = {"error": str(exc)}
-            executed.append(step)
-
-        synthesized = self.synthesizer.run({"question": question, "steps": executed})
-        return AgentResult(
-            question=question,
-            sub_questions=sub_questions,
-            steps=executed,
-            answer=synthesized["answer"],
-            citations=synthesized["citations"],
-            workflow_mermaid=build_workflow_mermaid(executed),
-        )
+            yield step
