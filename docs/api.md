@@ -1,0 +1,153 @@
+# Agent4Study API 文档
+
+## 认证与错误
+
+当前版本面向本地开发和竞赛演示，不启用用户认证。LLM API Key 只从后端 `.env` 读取，任何接口都不会返回密钥明文。
+
+常见错误：
+
+| 状态码 | 含义 |
+| --- | --- |
+| 400 | 参数缺失或格式不合法 |
+| 404 | 教材、解析产物或图谱数据不存在 |
+| 500 | 解析、LLM 调用、索引或图谱构建失败 |
+
+## System
+
+### `GET /health`
+
+返回后端状态、版本和模块占位状态。
+
+## Ingestion
+
+### `POST /api/ingestion/upload`
+
+上传并解析教材文件。`multipart/form-data` 参数：
+
+- `file`: PDF / Markdown / TXT / DOCX / Excel
+- `textbook_id`: 可选，自定义教材 ID
+
+### `GET /api/ingestion/list`
+
+返回已解析教材摘要列表。
+
+### `DELETE /api/ingestion/{textbook_id}`
+
+删除解析产物和对应原始文件。
+
+## Knowledge Graph
+
+### `POST /api/graph/build`
+
+请求：
+
+```json
+{ "textbook_id": "book_001" }
+```
+
+读取 `data/parsed/{textbook_id}.json`，抽取节点与关系并写入图谱存储。
+
+### `GET /api/graph/nodes`
+
+可选参数：`textbook_id`。
+
+### `GET /api/graph/edges`
+
+可选参数：`textbook_id`、`relation_type`。
+
+### `GET /api/graph/search?q=关键词`
+
+按名称、定义、分类搜索知识节点。
+
+### `POST /api/graph/query`
+
+请求：
+
+```json
+{ "question": "排序算法有哪些前置知识？", "depth": 2 }
+```
+
+返回自然语言解释、匹配节点、相关边和查询类型。
+
+### `POST /api/graph/merge`
+
+兼容接口：直接执行跨教材合并。
+
+### `POST /api/graph/merge/preview`
+
+生成合并候选和 LLM 建议，不修改 `nodes.json` / `edges.json`。
+
+### `POST /api/graph/merge/confirm`
+
+请求：
+
+```json
+{
+  "decisions": [
+    { "decision_id": "merge_001", "action": "merge", "approved": true }
+  ]
+}
+```
+
+仅应用人工批准的 `merge` 决策；`keep` 和 `remove` 只记录决策，不删除节点。
+
+### `GET /api/graph/merge/status`
+
+返回节点数、边数、合并决策数和估算去重率。
+
+## RAG
+
+### `POST /api/rag/index`
+
+请求：
+
+```json
+{ "textbook_id": "book_001" }
+```
+
+基于解析教材生成 chunks、embedding 和本地索引。
+
+### `POST /api/rag/query`
+
+请求：
+
+```json
+{ "query": "什么是快速排序？", "top_k": 5 }
+```
+
+返回回答、引用来源和原文片段。
+
+### `GET /api/rag/status`
+
+返回索引状态、chunk 数、embedding 维度和教材 ID 列表。
+
+## Agent
+
+### `POST /api/agent/query`
+
+请求：
+
+```json
+{ "question": "排序算法和数据结构有什么关系？" }
+```
+
+返回问题拆解、执行步骤、综合回答、引用和 Mermaid 工作流。
+
+### `GET /api/agent/query/stream?question=...`
+
+SSE 流式接口。事件类型：
+
+- `started`: 问题和拆解结果
+- `step`: 单个 Agent 步骤输出
+- `completed`: 完整 Agent 结果
+- `error`: 错误详情
+
+## Settings and Report
+
+### `GET /api/settings`
+
+返回安全配置摘要：模型、base URL、embedding、数据目录和 `llm_api_key_configured` 布尔值。
+
+### `GET /api/report/markdown`
+
+读取 `report/整合报告.md`；若为空则返回报告骨架。

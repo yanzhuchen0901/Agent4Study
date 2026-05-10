@@ -1,6 +1,33 @@
-# Agent4Study 竞赛报告
+"""Competition report generation."""
 
-生成时间：2026-05-10 11:49
+from __future__ import annotations
+
+from datetime import datetime
+
+from src.config import ROOT_DIR, get_settings
+from src.knowledge_graph.graph_store import GraphStore
+from src.knowledge_graph.merger import KnowledgeMerger
+from src.rag.benchmark import RAGBenchmark, load_benchmark_report
+from src.rag.vector_store import VectorStore
+
+
+class ReportGenerator:
+    """Generate the markdown report required by the hackathon deliverable."""
+
+    def __init__(self) -> None:
+        self.settings = get_settings()
+
+    def generate_competition_report(self) -> str:
+        chunks, dimension, textbook_ids = VectorStore().status()
+        nodes = GraphStore().load_nodes()
+        edges = GraphStore().load_edges()
+        merge_status = KnowledgeMerger().status()
+        benchmark = load_benchmark_report() or RAGBenchmark().run()
+        generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        return f"""# Agent4Study 竞赛报告
+
+生成时间：{generated_at}
 
 ## 1. Abstract
 
@@ -24,17 +51,17 @@ Agent4Study 是一个面向多教材学习场景的 AI 全栈系统，覆盖教�
 
 | Metric | Value |
 | --- | ---: |
-| Parsed textbook ids in RAG index | 0 |
-| RAG chunks | 0 |
-| Embedding dimension | 0 |
-| Knowledge graph nodes | 0 |
-| Knowledge graph edges | 0 |
-| Merge decisions | 0 |
-| Estimated deduplication rate | 0.0% |
+| Parsed textbook ids in RAG index | {len(textbook_ids)} |
+| RAG chunks | {chunks} |
+| Embedding dimension | {dimension} |
+| Knowledge graph nodes | {len(nodes)} |
+| Knowledge graph edges | {len(edges)} |
+| Merge decisions | {merge_status.merge_decision_count} |
+| Estimated deduplication rate | {round(merge_status.deduplication_rate * 100, 2)}% |
 
 ### 4.2 RAG Chunk Size 对比
 
-当前未检测到可评测索引。运行 `python -m src.rag.benchmark` 后会生成可复现指标。
+{self._benchmark_table(benchmark.metrics)}
 
 ### 4.3 Hybrid vs 纯 BM25 检索
 
@@ -62,3 +89,32 @@ Benchmark 同时记录 `hybrid-vector-bm25` 与 `bm25-only`。在已有索引时
 - NetworkX: graph storage and traversal.
 - sentence-transformers / FAISS / BM25: retrieval foundation.
 - DeepSeek OpenAI-compatible API: LLM extraction and generation.
+"""
+
+    def _benchmark_table(self, metrics) -> str:
+        if not metrics:
+            return "当前未检测到可评测索引。运行 `python -m src.rag.benchmark` 后会生成可复现指标。"
+        lines = [
+            "| Strategy | Chunk Size | Cases | Hit Rate | Avg Retrieved | Estimated Prompt Tokens |",
+            "| --- | ---: | ---: | ---: | ---: | ---: |",
+        ]
+        for metric in metrics:
+            lines.append(
+                f"| {metric.strategy} | {metric.chunk_size} | {metric.case_count} | {metric.hit_rate} | {metric.avg_retrieved} | {metric.estimated_prompt_tokens} |"
+            )
+        return "\n".join(lines)
+
+    def write_reports(self) -> None:
+        markdown = self.generate_competition_report()
+        report_dir = ROOT_DIR / "report"
+        docs_dir = ROOT_DIR / "docs"
+        report_dir.mkdir(exist_ok=True)
+        docs_dir.mkdir(exist_ok=True)
+        (report_dir / "competition_report.md").write_text(markdown, encoding="utf-8")
+        (report_dir / "整合报告.md").write_text(markdown, encoding="utf-8")
+        (docs_dir / "report.md").write_text(markdown, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    ReportGenerator().write_reports()
+    print("report/competition_report.md")
