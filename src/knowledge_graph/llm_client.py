@@ -24,6 +24,7 @@ class GraphLLMClient:
         client = OpenAI(
             api_key=self.settings.llm_api_key,
             base_url=self.settings.llm_base_url,
+            timeout=8.0,
         )
         response = client.chat.completions.create(
             model=self.settings.llm_model,

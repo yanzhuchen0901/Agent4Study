@@ -54,3 +54,12 @@ class MergeStatus(BaseModel):
     merge_decision_count: int
     deduplication_rate: float
     decisions: list[MergeDecision]
+
+
+class GraphQueryResult(BaseModel):
+    answer: str
+    nodes: list[KnowledgeNode]
+    edges: list[KnowledgeEdge]
+    query_type: str
+    matched_node_ids: list[str]
+    error: str | None = None

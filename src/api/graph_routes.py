@@ -6,7 +6,8 @@ from pydantic import BaseModel
 from src.knowledge_graph.builder import KnowledgeGraphBuilder
 from src.knowledge_graph.graph_store import GraphStore
 from src.knowledge_graph.merger import KnowledgeMerger
-from src.knowledge_graph.models import GraphBuildResult, KnowledgeEdge, KnowledgeNode, MergeStatus, RelationType
+from src.knowledge_graph.models import GraphBuildResult, GraphQueryResult, KnowledgeEdge, KnowledgeNode, MergeStatus, RelationType
+from src.knowledge_graph.query_engine import GraphQueryEngine
 
 
 router = APIRouter(prefix="/api/graph", tags=["graph"])
@@ -14,6 +15,11 @@ router = APIRouter(prefix="/api/graph", tags=["graph"])
 
 class BuildGraphRequest(BaseModel):
     textbook_id: str
+
+
+class GraphQueryRequest(BaseModel):
+    question: str
+    depth: int = 2
 
 
 @router.post("/build", response_model=GraphBuildResult)
@@ -60,6 +66,13 @@ def search_nodes(q: str = Query(min_length=1)) -> list[KnowledgeNode]:
         or query in node.definition.lower()
         or query in node.category.lower()
     ]
+
+
+@router.post("/query", response_model=GraphQueryResult)
+def query_graph(request: GraphQueryRequest) -> GraphQueryResult:
+    if not request.question.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Question is required")
+    return GraphQueryEngine().query(request.question.strip(), max(1, min(request.depth, 3)))
 
 
 @router.post("/merge", response_model=MergeStatus)
