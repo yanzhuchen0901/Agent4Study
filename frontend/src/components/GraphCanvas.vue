@@ -14,11 +14,16 @@ const container = ref(null)
 let cy = null
 
 const categoryColors = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#dc2626', '#0891b2']
+const textbookShapes = ['ellipse', 'rectangle', 'diamond', 'round-triangle', 'star']
 
 const elements = computed(() => {
   const categories = [...new Set(props.nodes.map((node) => node.category || '核心概念'))]
   const colorByCategory = Object.fromEntries(
     categories.map((category, index) => [category, categoryColors[index % categoryColors.length]]),
+  )
+  const textbooks = [...new Set(props.nodes.map((node) => node.textbook_id || '').filter(Boolean))]
+  const shapeByTextbook = Object.fromEntries(
+    textbooks.map((id, index) => [id, textbookShapes[index % textbookShapes.length]]),
   )
   return [
     ...props.nodes.map((node) => ({
@@ -27,6 +32,7 @@ const elements = computed(() => {
         label: node.name,
         color: colorByCategory[node.category || '核心概念'],
         size: 36 + Math.min((node.frequency || 1) * 5, 32),
+        shape: shapeByTextbook[node.textbook_id || ''] || 'ellipse',
       },
     })),
     ...props.edges.map((edge) => ({
@@ -82,11 +88,14 @@ async function renderGraph() {
             label: 'data(label)',
             width: 'data(size)',
             height: 'data(size)',
+            shape: 'data(shape)',
             color: '#111827',
             'font-size': 11,
             'text-valign': 'bottom',
             'text-halign': 'center',
             'text-margin-y': 6,
+            'border-width': 2,
+            'border-color': '#e2e8f0',
           },
         },
         {
@@ -111,6 +120,23 @@ async function renderGraph() {
     })
     cy.on('tap', 'node', (event) => {
       emit('node-selected', event.target.data())
+    })
+    cy.on('dblclick', 'node', (event) => {
+      const node = event.target
+      const neighborIds = new Set()
+      neighborIds.add(node.id())
+      node.neighborhood().nodes().forEach((n) => neighborIds.add(n.id()))
+      emit('node-selected', node.data())
+      const ids = [...neighborIds]
+      const collection = cy.collection(
+        ids.map((id) => cy.getElementById(id)).filter((el) => el.length),
+      )
+      if (collection.length) {
+        cy.elements().addClass('faded')
+        collection.removeClass('faded').addClass('highlighted')
+        collection.connectedEdges().removeClass('faded').addClass('highlighted')
+        cy.animate({ fit: { eles: collection, padding: 90 } }, { duration: 300 })
+      }
     })
   } else {
     cy.elements().remove()
