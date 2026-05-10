@@ -159,13 +159,22 @@ async function renderGraph() {
     runLayout(true)
     applyHighlight()
   } else {
-    // Re-render: batch-replace elements atomically, no animated layout
+    // Re-render: preserve viewport, only re-layout if element count changes
+    const prevZoom = cy.zoom()
+    const prevPan = { x: cy.pan().x, y: cy.pan().y }
+    const prevNodeCount = cy.nodes().length
+    const prevEdgeCount = cy.edges().length
     stopLayout()
     cy.startBatch()
     cy.elements().remove()
     cy.add(elements.value)
     cy.endBatch()
-    runLayout(false)
+    if (prevNodeCount !== cy.nodes().length || prevEdgeCount !== cy.edges().length) {
+      runLayout(false)
+    } else {
+      cy.zoom(prevZoom)
+      cy.pan(prevPan)
+    }
     applyHighlight()
   }
 }
