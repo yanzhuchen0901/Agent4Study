@@ -7,5 +7,11 @@
   "description": "AI 教科书知识系统：支持多教材解析、知识图谱构建与合并、RAG 问答、Agent 工作流和竞赛报告预览。",
   "cover_image": "",
   "sdk_type": "docker",
-  "hardware": "platform/2v-cpu-16g-mem"
+  "hardware": "platform/2v-cpu-16g-mem",
+  "port": 7860,
+  "resource_configuration": {
+    "cpu": 2,
+    "memory": 16,
+    "gpu": 0
+  }
 }

@@ -19,7 +19,18 @@ $headers = @{
     "Content-Type" = "application/json"
 }
 
-$body = $config | ConvertTo-Json -Depth 10
+$createBody = [ordered]@{
+    repo_name = $config.repo_name
+    owner = $config.owner
+    display_name = $config.display_name
+    license = $config.license
+    private = $config.private
+    description = $config.description
+    cover_image = $config.cover_image
+    sdk_type = $config.sdk_type
+    hardware = $config.hardware
+}
+$body = $createBody | ConvertTo-Json -Depth 10
 $baseUrl = "https://modelscope.cn/openapi/v1"
 
 try {
