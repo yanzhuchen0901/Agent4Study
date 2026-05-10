@@ -101,6 +101,8 @@ def search_nodes(q: str = Query(min_length=1)) -> list[KnowledgeNode]:
         if query in node.name.lower()
         or query in node.definition.lower()
         or query in node.category.lower()
+        or query in node.original_text.lower()
+        or any(query in alias.lower() for alias in node.aliases)
     ]
 
 

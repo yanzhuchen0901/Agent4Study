@@ -9,7 +9,7 @@ const props = defineProps({
   highlightedNodeIds: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['node-selected'])
+const emit = defineEmits(['node-selected', 'expand-neighbors'])
 const container = ref(null)
 let cy = null
 let layout = null
@@ -149,6 +149,8 @@ async function renderGraph() {
     cy.on('dblclick', 'node', (e) => {
       const n = e.target
       emit('node-selected', n.data())
+      const ids = [n.id(), ...n.neighborhood().nodes().map((node) => node.id())]
+      emit('expand-neighbors', [...new Set(ids)])
     })
     cy.on('dragfree', 'node', () => {
       stopLayout()

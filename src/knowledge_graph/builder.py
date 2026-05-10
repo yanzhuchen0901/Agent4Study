@@ -44,14 +44,20 @@ class KnowledgeGraphBuilder:
 
     输出:
     {"nodes":[
-      {"name":"栈","definition":"后进先出（LIFO）的线性数据结构，支持push/pop操作","category":"核心概念"},
-      {"name":"入栈","definition":"将元素压入栈顶的操作，常记为push","category":"方法"},
-      {"name":"出栈","definition":"从栈顶移除元素的操作，常记为pop","category":"方法"}
+      {"name":"栈","aliases":["stack"],"definition":"后进先出（LIFO）的线性数据结构，支持push/pop操作","category":"核心概念","importance":"high","original_text":"栈是一种后进先出（LIFO）的线性表"},
+      {"name":"入栈","aliases":["push"],"definition":"将元素压入栈顶的操作，常记为push","category":"方法","importance":"medium","original_text":"入栈称为push"},
+      {"name":"出栈","aliases":["pop"],"definition":"从栈顶移除元素的操作，常记为pop","category":"方法","importance":"medium","original_text":"出栈称为pop"}
     ]}
     """.strip()
         user_prompt = f"""
 请从教材章节中提取 3-8 个核心知识点，输出 JSON:
-{{"nodes":[{{"name":"概念名","definition":"15-40字定义","category":"核心概念/方法/现象/定理"}}]}}
+{{"nodes":[{{"name":"概念名","aliases":["别名"],"definition":"15-40字定义","category":"核心概念/方法/现象/定理","importance":"high/medium/low","original_text":"不超过120字原文证据"}}]}}
+
+约束：
+- 只抽取正文中有明确依据的知识点，不要凭空补充。
+- aliases 只填写教材原文出现的同义名、英文缩写或常用译名。
+- importance 根据教学重要性判断，核心概念为 high，普通操作/例子为 medium，边缘术语为 low。
+- original_text 必须来自正文原句或短片段。
 
     {few_shot}
 
@@ -86,9 +92,26 @@ class KnowledgeGraphBuilder:
                     chapter=chapter["title"],
                     page=chapter.get("page_start", 1),
                     source_node_ids=[node_id],
+                    aliases=[
+                        str(alias).strip()
+                        for alias in item.get("aliases", [])
+                        if str(alias).strip()
+                    ][:6],
+                    importance=self._normalize_importance(item.get("importance")),
+                    original_text=str(item.get("original_text", "")).strip()[:120],
                 )
             )
         return nodes
+
+    def _normalize_importance(self, value) -> str:
+        text = str(value or "medium").strip().lower()
+        if text in {"high", "medium", "low"}:
+            return text
+        if text in {"高", "重要", "核心"}:
+            return "high"
+        if text in {"低", "边缘"}:
+            return "low"
+        return "medium"
 
     def _rule_based_nodes(self, chapter_title: str, content: str) -> list[dict]:
         candidates = [chapter_title]
@@ -97,7 +120,21 @@ class KnowledgeGraphBuilder:
         for name in candidates:
             name = name.strip(" #：:，,。")
             if name and name not in {item["name"] for item in result}:
-                result.append({"name": name, "definition": f"{name}相关教材知识点", "category": "核心概念"})
+                result.append({
+                    "name": name,
+                    "aliases": [],
+                    "definition": f"{name}相关教材知识点",
+                    "category": "核心概念",
+                    "importance": "medium",
+                    "original_text": content[:120],
+                })
             if len(result) >= 6:
                 break
-        return result or [{"name": chapter_title or "教材知识点", "definition": "章节核心知识点", "category": "核心概念"}]
+        return result or [{
+            "name": chapter_title or "教材知识点",
+            "aliases": [],
+            "definition": "章节核心知识点",
+            "category": "核心概念",
+            "importance": "medium",
+            "original_text": content[:120],
+        }]

@@ -137,13 +137,19 @@ function handleNodeSelected(node) {
     drillTextbookId.value = node.textbook_id
     drillChapterId.value = ''
     currentLevel.value = 'chapter'
+    loadLevelData()
   } else if (currentLevel.value === 'chapter') {
     status.value = `钻取到知识点: ${node.name}`
     drillTextbookId.value = node.textbook_id
     drillChapterId.value = node.chapter_id
     currentLevel.value = 'knowledge'
+    loadLevelData()
   }
-  loadLevelData()
+}
+
+function handleExpandNeighbors(nodeIds) {
+  highlightedNodeIds.value = nodeIds
+  status.value = `已展开邻居子图: ${nodeIds.length} 个节点`
 }
 
 async function handleBuildHierarchy() {
@@ -287,6 +293,7 @@ onMounted(async () => {
         :layout-name="filters.layout"
         :highlighted-node-ids="highlightedNodeIds"
         @node-selected="handleNodeSelected"
+        @expand-neighbors="handleExpandNeighbors"
       />
     </div>
 
@@ -305,6 +312,9 @@ onMounted(async () => {
           <p v-else class="muted-line">
             {{ selectedNode.category }} · {{ selectedNode.chapter }} · p.{{ selectedNode.page }}
           </p>
+          <p v-if="selectedNode.importance" class="muted-line">重要性: {{ selectedNode.importance }}</p>
+          <p v-if="selectedNode.aliases?.length" class="muted-line">别名: {{ selectedNode.aliases.join('、') }}</p>
+          <p v-if="selectedNode.original_text" class="muted-line">原文证据: {{ selectedNode.original_text }}</p>
           <p v-if="selectedNode.level === 'knowledge'" class="muted-line">
             章节起始：
             <a href="#" @click.prevent="openChapterStart">p.{{ chapterStart || '?' }}（打开原文）</a>

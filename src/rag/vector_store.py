@@ -2,6 +2,7 @@
 
 import json
 import re
+from functools import lru_cache
 
 import numpy as np
 
@@ -9,7 +10,26 @@ from src.config import get_settings
 from src.rag.models import Chunk
 
 
+@lru_cache(maxsize=1)
+def _get_jieba():
+    try:
+        import jieba
+
+        jieba.setLogLevel(40)
+        return jieba
+    except Exception:
+        return None
+
+
 def tokenize(text: str) -> list[str]:
+    if not text:
+        return []
+    jieba = _get_jieba()
+    if jieba is not None:
+        tokens = [token.strip().lower() for token in jieba.cut_for_search(text)]
+        tokens = [token for token in tokens if token and not token.isspace()]
+        if tokens:
+            return tokens
     return re.findall(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]", text.lower())
 
 

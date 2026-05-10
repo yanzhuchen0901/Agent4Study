@@ -81,3 +81,12 @@ graph TD
 	- RAG 生成失败：回退到“检索片段摘要 + 明确来源”。
 	- 合并裁决失败：回退到相似度规则建议。
 - **引用溯源要求**：RAG 输出要求 `answer` 标注 `[来源序号]`，并返回 `used_sources`，便于前端展示 citations 与评审复现。
+
+## 对标改进吸收
+
+参考 `knowledge-integrator-full` 后，Agent4Study 保留自研 Orchestrator 和 Cytoscape 交互优势，同时吸收以下低风险增强：
+
+- RAG 检索优先使用 Jieba 中文分词，提高中文术语 BM25 命中质量。
+- 知识节点增加 `aliases / importance / original_text`，方便跨教材同义合并和报告展示证据。
+- 合并裁决增加 `best_node_id`，不仅判断是否合并，也说明哪个版本更适合作为合并后主节点。
+- Prompt 中明确 JSON 输出、低温度、失败回退和“证据不足不输出强关系”的防幻觉策略。

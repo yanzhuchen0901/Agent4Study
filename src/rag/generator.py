@@ -44,6 +44,8 @@ class RAGGenerator:
                 f"问题: {query}\n"
                 f"上下文:\n{context}\n\n"
                 f"{few_shot}\n\n"
+                "约束：如果上下文没有足够证据，回答“教材中未找到相关信息”，不要补充常识。"
+                "每个关键论断都必须带[来源序号]。\n"
                 "输出 {\"answer\":\"回答，必须带[来源序号]\",\"used_sources\":[1,2]}"
             )
             data = self.llm_client.complete_json(system_prompt, user_prompt)

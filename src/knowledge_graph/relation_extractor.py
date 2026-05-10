@@ -58,10 +58,19 @@ class RelationExtractor:
 判断两个概念关系，relation_type 只能是 prerequisite/parallel/contains/applies_to。
 输出 {{"relation_type":"parallel","description":"原因"}}
 
+约束：
+- 只有 A/B 的名称、定义或原文证据足以支持关系时才输出强关系。
+- 证据不足时使用 parallel，并在 description 中说明“证据不足，仅保留弱相关”。
+- 不要引入教材片段外的新概念。
+
     {few_shot}
 
 A: {source.name} - {source.definition}
+别名: {"、".join(source.aliases) if source.aliases else "无"}
+原文: {source.original_text or "无"}
 B: {target.name} - {target.definition}
+别名: {"、".join(target.aliases) if target.aliases else "无"}
+原文: {target.original_text or "无"}
 """
         try:
             data = self.llm_client.complete_json(system_prompt, user_prompt)

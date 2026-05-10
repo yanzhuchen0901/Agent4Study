@@ -75,6 +75,8 @@ class GraphQueryEngine:
             or text in node.name.lower()
             or text in node.definition.lower()
             or text in node.category.lower()
+            or text in node.original_text.lower()
+            or any(alias.lower() in text or text in alias.lower() for alias in node.aliases)
         ]
         if matched:
             return matched[:10]
@@ -82,7 +84,13 @@ class GraphQueryEngine:
         return [
             node
             for node in nodes
-            if any(token in node.name or token in node.definition for token in tokens)
+            if any(
+                token in node.name
+                or token in node.definition
+                or token in node.original_text
+                or any(token in alias for alias in node.aliases)
+                for token in tokens
+            )
         ][:10]
 
     def _subgraph(

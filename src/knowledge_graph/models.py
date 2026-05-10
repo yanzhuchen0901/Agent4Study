@@ -22,6 +22,9 @@ class KnowledgeNode(BaseModel):
     frequency: int = 1
     source_node_ids: list[str] = Field(default_factory=list)
     level: str = "knowledge"
+    aliases: list[str] = Field(default_factory=list)
+    importance: str = "medium"
+    original_text: str = ""
 
 
 class KnowledgeEdge(BaseModel):
@@ -40,6 +43,7 @@ class MergeDecision(BaseModel):
     action: MergeAction
     affected_nodes: list[str]
     result_node: str | None = None
+    best_node_id: str | None = None
     reason: str
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 

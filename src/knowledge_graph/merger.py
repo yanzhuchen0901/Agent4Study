@@ -14,6 +14,10 @@ def normalize_name(name: str) -> str:
     return re.sub(r"[\s\-_/（）()《》“”\"']", "", name).lower()
 
 
+def node_match_text(node: KnowledgeNode) -> str:
+    return " ".join([node.name, *node.aliases, node.definition]).strip()
+
+
 class KnowledgeMerger:
     def __init__(self, store: GraphStore | None = None, llm_client: GraphLLMClient | None = None) -> None:
         self.settings = get_settings()
@@ -118,8 +122,10 @@ class KnowledgeMerger:
                     continue
                 same_textbook = other.textbook_id == node.textbook_id
                 name_score = SequenceMatcher(None, normalize_name(node.name), normalize_name(other.name)).ratio()
+                alias_score = SequenceMatcher(None, normalize_name(node_match_text(node)), normalize_name(node_match_text(other))).ratio()
                 def_score = SequenceMatcher(None, node.definition, other.definition).ratio()
-                if not same_textbook and (name_score >= 0.86 or def_score >= 0.72):
+                alias_overlap = bool({normalize_name(alias) for alias in node.aliases + [node.name]} & {normalize_name(alias) for alias in other.aliases + [other.name]})
+                if not same_textbook and (alias_overlap or name_score >= 0.86 or alias_score >= 0.78 or def_score >= 0.72):
                     group.append(other)
             if len(group) > 1:
                 used.update(item.id for item in group)
@@ -137,27 +143,38 @@ class KnowledgeMerger:
 - book2_ch3_node_014: Stack / LIFO data structure with push/pop / Algorithms
 
 输出:
-{"action":"merge","reason":"名称同义且定义等价，属于同一概念","confidence":0.9}
+{"action":"merge","best_node_id":"book1_ch1_node_001","reason":"名称同义且定义等价，book1版本定义更完整","confidence":0.9}
 """.strip()
         user_prompt = "\n".join(
-            [f"- {node.id}: {node.name} / {node.definition} / {node.textbook_title}" for node in group]
+            [
+                (
+                    f"- {node.id}: {node.name} / aliases={node.aliases} / "
+                    f"importance={node.importance} / definition={node.definition} / "
+                    f"evidence={node.original_text} / {node.textbook_title}"
+                )
+                for node in group
+            ]
         )
         user_prompt += "\n\n" + few_shot
-        user_prompt += '\n\n输出 {"action":"merge|keep|remove","reason":"原因","confidence":0.0}'
+        user_prompt += '\n\n输出 {"action":"merge|keep|remove","best_node_id":"最佳节点ID","reason":"原因","confidence":0.0}'
         try:
             data = self.llm_client.complete_json(system_prompt, user_prompt)
             action = data.get("action", "merge")
             if action not in {"merge", "keep", "remove"}:
                 action = "merge"
+            best_node_id = str(data.get("best_node_id", affected[0])).strip()
+            if best_node_id not in affected:
+                best_node_id = affected[0]
             reason = str(data.get("reason", "语义高度相似，建议合并"))
             confidence = float(data.get("confidence", 0.85))
         except (LLMClientError, Exception):
-            action, reason, confidence = "merge", "名称或定义相似，按规则合并", 0.78
+            action, best_node_id, reason, confidence = "merge", affected[0], "名称、别名或定义相似，按规则合并", 0.78
         return MergeDecision(
             decision_id=f"merge_{index:03d}",
             action=action,
             affected_nodes=affected,
-            result_node=affected[0] if action == "merge" else None,
+            result_node=best_node_id if action == "merge" else None,
+            best_node_id=best_node_id,
             reason=reason,
             confidence=max(0.0, min(confidence, 1.0)),
         )
@@ -171,11 +188,15 @@ class KnowledgeMerger:
     ) -> tuple[list[KnowledgeNode], list[KnowledgeEdge]]:
         result_id = decision.result_node or group[0].id
         group_ids = {node.id for node in group}
-        primary = group[0].model_copy(deep=True)
+        primary_source = next((node for node in group if node.id == result_id), group[0])
+        primary = primary_source.model_copy(deep=True)
         primary.id = result_id
         primary.frequency = sum(node.frequency for node in group)
         primary.source_node_ids = sorted({source for node in group for source in (node.source_node_ids or [node.id])})
         primary.definition = max((node.definition for node in group), key=len, default=primary.definition)
+        primary.aliases = sorted({alias for node in group for alias in (node.aliases + [node.name]) if alias and alias != primary.name})
+        primary.importance = self._max_importance(group)
+        primary.original_text = max((node.original_text for node in group), key=len, default=primary.original_text)
 
         remaining = [node for node in nodes if node.id not in group_ids]
         remaining.append(primary)
@@ -189,3 +210,7 @@ class KnowledgeMerger:
             updated = edge.model_copy(update={"source": source, "target": target})
             rewritten[f"{source}:{target}:{updated.relation_type}"] = updated
         return remaining, list(rewritten.values())
+
+    def _max_importance(self, group: list[KnowledgeNode]) -> str:
+        order = {"low": 0, "medium": 1, "high": 2}
+        return max((node.importance for node in group), key=lambda item: order.get(item, 1), default="medium")
